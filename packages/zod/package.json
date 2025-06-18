@@ -26,6 +26,11 @@
 	],
 	"scripts": {
 		"build": "nest build",
+		"test": "jest",
+		"test:ci": "jest --ci --forceExit",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage",
+		"test:coverage:watch": "jest --coverage --watch",
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
@@ -43,12 +48,14 @@
 		"@nestjs/core": "^11.0.0",
 		"@nestjs/platform-express": "^11.0.0",
 		"@nestjs/testing": "^11.0.0",
+		"@proventuslabs/nestjs-zod": "^0.0.0",
 		"@types/jest": "^30.0.0",
 		"@types/lodash": "^4.17.18",
 		"@types/node": "^20.0.0",
 		"jest": "^30.0.0",
 		"reflect-metadata": "^0.2.2",
 		"rxjs": "^7.8.2",
+		"ts-jest": "^29.4.0",
 		"type-fest": "^4.41.0",
 		"typescript": "^5.8.3",
 		"zod": "^3.25.67"

@@ -13,8 +13,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      zod--tag_name: ${{ steps.release.outputs.zod--tag_name}}
-      zod--release_created: ${{ steps.release.outputs.zod--release_created}}
+      'packages/zod--tag_name': ${{ steps.release.outputs['packages/zod--tag_name'] }}
+      'packages/zod--release_created': ${{ steps.release.outputs['packages/zod--release_created'] }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -22,8 +22,39 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
       - name: Print release outputs for debugging
         continue-on-error: true
         run: |
           echo "Release outputs:"
           echo "${{ toJson(steps.release.outputs) }}"
+
+  release-zod:
+    if: ${{ needs.release-please.outputs['packages/zod--release_created'] == 'true' }}
+    runs-on: ubuntu-latest
+    needs: release-please
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/zod/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+
+      - run: npm ci
+
+      - run: npm run build --workspace=@proventuslabs/nestjs-zod
+
+      - name: Publish to npm
+        run: npm publish --workspace=@proventuslabs/nestjs-zod --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
