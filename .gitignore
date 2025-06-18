@@ -1,0 +1,32 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+
+# node files
+!package.json
+!package-lock.json
+
+# typescript files
+!*.ts
+
+# config files
+!biome.json
+!tsconfig.json
+!tsconfig.build.json
+!mise.toml
+
+# Documentation
+!README.md
+!LICENSE
+
+# Build files
+!.github/**/*
+
+# ...even if they are in subdirectories
+!*/
+
+# keep always ignored
+node_modules/
+dist/
