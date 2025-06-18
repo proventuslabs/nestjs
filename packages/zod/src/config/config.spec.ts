@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 
 import { z } from "zod";
 
-import { registerConfig } from "./config.js";
+import { registerConfig } from "./config";
 
 describe("config", () => {
 	it("should register config with ConfigModule.forFeature", async () => {

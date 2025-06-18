@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 
 import { z } from "zod";
 
-import { ZodConfigurableModuleBuilder } from "./module.js";
+import { ZodConfigurableModuleBuilder } from "./module";
 
 describe("module", () => {
 	const MyOptionSchema = z

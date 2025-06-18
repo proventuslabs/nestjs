@@ -16,6 +16,7 @@
 !tsconfig.json
 !tsconfig.build.json
 !mise.toml
+!jest.config.cjs
 
 # Documentation
 !README.md
