@@ -1,0 +1,29 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      zod--tag_name: ${{ steps.release.outputs.zod--tag_name}}
+      zod--release_created: ${{ steps.release.outputs.zod--release_created}}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Print release outputs for debugging
+        continue-on-error: true
+        run: |
+          echo "Release outputs:"
+          echo "${{ toJson(steps.release.outputs) }}"
