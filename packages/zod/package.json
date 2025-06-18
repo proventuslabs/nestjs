@@ -1,0 +1,56 @@
+{
+	"name": "@proventuslabs/nestjs-zod",
+	"version": "0.0.0",
+	"license": "MIT",
+	"description": "A collection of NestJS modules to integrate Zod into your application.",
+	"keywords": [
+		"nestjs",
+		"zod",
+		"config",
+		"module"
+	],
+	"author": "ProventusLabs <info@proventuslabs.com>",
+	"homepage": "https://github.com/proventuslabs/nestjs/packages/zod#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/proventuslabs/nestjs.git",
+		"directory": "packages/zod"
+	},
+	"bugs": {
+		"url": "https://github.com/proventuslabs/nestjs/issues"
+	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "nest build",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"lodash": "^4.17.21",
+		"yaml": "^2.8.0"
+	},
+	"peerDependencies": {
+		"@nestjs/common": "^10.0.0 || ^11.0.0",
+		"@nestjs/config": "^3.0.0 || ^4.0.0",
+		"zod": "^3.0.0"
+	},
+	"devDependencies": {
+		"@nestjs/cli": "^11.0.0",
+		"@nestjs/common": "^11.0.0",
+		"@nestjs/core": "^11.0.0",
+		"@nestjs/platform-express": "^11.0.0",
+		"@nestjs/testing": "^11.0.0",
+		"@types/jest": "^30.0.0",
+		"@types/lodash": "^4.17.18",
+		"@types/node": "^20.0.0",
+		"jest": "^30.0.0",
+		"reflect-metadata": "^0.2.2",
+		"rxjs": "^7.8.2",
+		"type-fest": "^4.41.0",
+		"typescript": "^5.8.3",
+		"zod": "^3.25.67"
+	}
+}
