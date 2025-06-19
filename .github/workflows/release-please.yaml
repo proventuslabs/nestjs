@@ -48,7 +48,9 @@ jobs:
           path: |
             node_modules
             packages/zod/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
 
       - run: npm ci
 
