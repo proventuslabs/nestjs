@@ -19,8 +19,9 @@
 !jest.config.cjs
 
 # Documentation
-!README.md
 !LICENSE
+!README.md
+!CONTRIBUTING.md
 
 # Build files
 !.github/**/*
