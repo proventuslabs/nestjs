@@ -48,9 +48,9 @@ jobs:
           path: |
             node_modules
             packages/zod/node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
 
-      - run: npm ci
+      - run: npm ci --workspace=@proventuslabs/nestjs-zod
 
       - run: npm run build --workspace=@proventuslabs/nestjs-zod
 
