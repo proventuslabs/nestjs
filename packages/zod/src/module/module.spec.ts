@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 
 import { z } from "zod";
-import { ZodConfigurableModuleBuilder } from "./module";
 
+import { ZodConfigurableModuleBuilder } from "./module";
 
 describe("module", () => {
 	const MyOptionSchema = z
@@ -38,7 +38,7 @@ describe("module", () => {
 		const moduleRef = await Test.createTestingModule({
 			imports: [
 				DynModule.forRoot({
-				  useFlags: false,
+					useFlags: true,
 					clientName: "some long enough client name",
 				}),
 			],
