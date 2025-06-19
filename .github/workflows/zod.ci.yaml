@@ -35,9 +35,11 @@ jobs:
             node_modules
             packages/zod/node_modules
           key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
           
       - name: Install dependencies
-        run: npm ci --workspace=@proventuslabs/nestjs-zod
+        run: npm ci
         
       - name: Build zod package
         run: npm run build --workspace=@proventuslabs/nestjs-zod
@@ -63,9 +65,11 @@ jobs:
             node_modules
             packages/zod/node_modules
           key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
           
       - name: Install dependencies
-        run: npm ci --workspace=@proventuslabs/nestjs-zod
+        run: npm ci
 
       - name: Run TypeScript typecheck
         run: |
@@ -108,9 +112,11 @@ jobs:
             node_modules
             packages/zod/node_modules
           key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
           
       - name: Install dependencies
-        run: npm ci --workspace=@proventuslabs/nestjs-zod
+        run: npm ci
 
       - name: Run tests
         run: npm run test --workspace=@proventuslabs/nestjs-zod -- --reporters=github-actions
@@ -138,9 +144,11 @@ jobs:
             node_modules
             packages/zod/node_modules
           key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
           
       - name: Install dependencies
-        run: npm ci --workspace=@proventuslabs/nestjs-zod
+        run: npm ci
 
       - name: Run Biome lint
         run: npm run lint --workspace=@proventuslabs/nestjs-zod -- --reporter=github
@@ -182,9 +190,11 @@ jobs:
             node_modules
             packages/zod/node_modules
           key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
           
       - name: Install dependencies
-        run: npm ci --workspace=@proventuslabs/nestjs-zod
+        run: npm ci
 
       - name: Run Biome format
         run: npm run format --workspace=@proventuslabs/nestjs-zod -- --reporter=github
