@@ -21,7 +21,7 @@ describe("handleFile", () => {
 	});
 
 	it("should add file to files array when not truncated", () => {
-		handleFile("testField", mockFile, false, mockInfo, files);
+		handleFile("testField", mockFile, false, mockInfo, files, {});
 
 		expect(files).toHaveLength(1);
 		expect(files[0]).toHaveProperty("fieldname", "testField");
@@ -36,13 +36,13 @@ describe("handleFile", () => {
 			done();
 		});
 
-		handleFile("testField", mockFile, true, mockInfo, files);
+		handleFile("testField", mockFile, true, mockInfo, files, {});
 
 		expect(files).toHaveLength(0);
 	});
 
 	it("should create a tee stream for the file", () => {
-		handleFile("testField", mockFile, false, mockInfo, files);
+		handleFile("testField", mockFile, false, mockInfo, files, {});
 
 		expect(files[0]).not.toBe(mockFile);
 	});

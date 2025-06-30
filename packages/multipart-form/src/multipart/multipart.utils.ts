@@ -1,6 +1,6 @@
 import type { Readable } from "node:stream";
 
-import type { MultipartFileUpload } from "./multipart.types";
+import type { MultipartFields, MultipartFileUpload } from "./multipart.types";
 
 export function wrapReadableIntoMultipartFileUpload(
 	file: Readable,
@@ -8,6 +8,7 @@ export function wrapReadableIntoMultipartFileUpload(
 	filename: string,
 	encoding: string,
 	mimetype: string,
+	fields: MultipartFields,
 ): MultipartFileUpload {
 	const wrapped = Object.defineProperties(file, {
 		fieldname: {
@@ -34,6 +35,12 @@ export function wrapReadableIntoMultipartFileUpload(
 			enumerable: true,
 			configurable: false,
 		},
+		fields: {
+			value: fields,
+			writable: false,
+			enumerable: true,
+			configurable: false,
+		}
 	});
 
 	return wrapped as MultipartFileUpload;

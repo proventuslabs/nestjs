@@ -15,6 +15,7 @@ describe("MultipartFiles (Decorator)", () => {
 		"doc.pdf",
 		"7bit",
 		"application/pdf",
+		{}
 	);
 
 	const mockFile2 = wrapReadableIntoMultipartFileUpload(
@@ -23,6 +24,7 @@ describe("MultipartFiles (Decorator)", () => {
 		"pic.jpg",
 		"7bit",
 		"image/jpeg",
+		{}
 	);
 
 	const mockFile3 = wrapReadableIntoMultipartFileUpload(
@@ -31,6 +33,7 @@ describe("MultipartFiles (Decorator)", () => {
 		"another_doc.txt",
 		"7bit",
 		"text/plain",
+		{}
 	);
 
 	const createMockContext = (files: MultipartFileUpload[] = [], type: "http" | "ws" = "http") =>

@@ -13,6 +13,7 @@ export function handleFile(
 	truncated: boolean,
 	info: busboy.FileInfo,
 	files: MultipartFileUpload[],
+	fields: MultipartFields,
 	config?: Omit<BusboyConfig, "headers">,
 ): void {
 	const { filename, encoding, mimeType } = info;
@@ -28,7 +29,7 @@ export function handleFile(
 		emitClose: true,
 		highWaterMark: config?.fileHwm,
 	}));
-	const upload = wrapReadableIntoMultipartFileUpload(tee, fieldname, filename, encoding, mimeType);
+	const upload = wrapReadableIntoMultipartFileUpload(tee, fieldname, filename, encoding, mimeType, fields);
 	files.push(upload);
 }
 
@@ -70,7 +71,7 @@ export async function parseMultipartData(
 		const cleanup = () => req.unpipe(bb);
 
 		bb.on("file", (fieldname, file, info) => {
-			handleFile(fieldname, file, file.truncated ?? false, info, files, config);
+			handleFile(fieldname, file, file.truncated ?? false, info, files, fields, config);
 		});
 
 		bb.on("field", (fieldname, value, info) => {
