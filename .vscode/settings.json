@@ -1,0 +1,6 @@
+{
+	"jest.virtualFolders": [
+		{"name": "zod", "rootPath": "packages/zod"},
+		{"name": "multipart-form", "rootPath": "packages/multipart-form"},
+	],
+}

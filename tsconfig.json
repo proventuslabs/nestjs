@@ -15,11 +15,13 @@
 		"module": "commonjs",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
+		"experimentalDecorators": true,
 
 		/* Emit */
 		"target": "es2022",
 		"baseUrl": ".",
 		"declaration": true,
+		"emitDecoratorMetadata": true,
 		"sourceMap": true,
 
 		/* Interop Constraints */

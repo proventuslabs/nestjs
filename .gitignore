@@ -25,6 +25,7 @@
 
 # Build files
 !.github/**/*
+!.vscode/**/*
 
 # ...even if they are in subdirectories
 !*/
