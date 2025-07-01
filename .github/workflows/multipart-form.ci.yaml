@@ -1,0 +1,167 @@
+name: multipart-form Package CI
+
+on:
+  pull_request:
+    paths:
+      - packages/multipart-form/**
+      - .github/workflows/multipart-form.ci.yaml
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/multipart-form/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/multipart-form/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build multipart-form package
+        run: npm run build --workspace=@proventuslabs/nestjs-multipart-form
+
+  typecheck:
+    name: Typecheck package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/multipart-form/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/multipart-form/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript typecheck
+        run: |
+          npm run typecheck --workspace=@proventuslabs/nestjs-multipart-form 2>&1 | \
+          sed -E 's/^([^:]+)\(([^,]+),([^)]+)\): (error|warning) [^:]+: (.*)$/::\4 file=\1,line=\2,col=\3::\5/'
+
+  test:
+    name: Test package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/multipart-form/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/multipart-form/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --workspace=@proventuslabs/nestjs-multipart-form -- --reporters=github-actions
+
+  lint:
+    name: Lint package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/multipart-form/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/multipart-form/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome lint
+        run: npm run lint --workspace=@proventuslabs/nestjs-multipart-form -- --reporter=github
+
+  format:
+    name: Format package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/multipart-form/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/multipart-form/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome format
+        run: npm run format --workspace=@proventuslabs/nestjs-multipart-form -- --reporter=github
