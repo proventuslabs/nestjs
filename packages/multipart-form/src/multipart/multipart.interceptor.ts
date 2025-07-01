@@ -26,7 +26,7 @@ export function MultipartInterceptor(config?: Omit<busboy.BusboyConfig, "headers
 
 			return defer(() => parseMultipartData(req, req.headers, config)).pipe(
 				catchError((err) =>
-					throwError(() => new BadRequestException(err, "invalid multipart request")),
+					throwError(() => new BadRequestException("invalid multipart request", { cause: err })),
 				),
 				mergeMap(([files, fields]) => {
 					req.files = files;
