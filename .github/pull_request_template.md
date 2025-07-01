@@ -22,6 +22,7 @@
 <!-- Mark the relevant package(s) with an 'x' -->
 
 - [ ] `@proventuslabs/nestjs-zod`
+- [ ] `<none>`
 - [ ] Other packages (please specify)
 
 ## 🧪 Testing
@@ -73,19 +74,6 @@ Related to #(issue number)
 
 <!-- Provide instructions for users to migrate from the old version -->
 
-## 📚 Documentation Updates
-
-<!-- List any documentation that needs to be updated -->
-
-- [ ] README.md
-- [ ] API documentation
-- [ ] Examples
-- [ ] Other (please specify)
-
 ## 🔍 Additional Notes
 
 <!-- Add any other context about the pull request here -->
-
-## 🙏 Acknowledgments
-
-<!-- Credit any collaborators, reviewers, or resources that helped --> 
