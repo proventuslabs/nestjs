@@ -13,8 +13,13 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      'packages/zod--tag_name': ${{ steps.release.outputs['packages/zod--tag_name'] }}
-      'packages/zod--release_created': ${{ steps.release.outputs['packages/zod--release_created'] }}
+      # You need to explicitly output the tag name and release_created for each package
+      # This assumes your release-please-config.json and .release-please-manifest.json
+      # are set up to handle multiple packages and will output these.
+      "packages/zod--tag_name": ${{ steps.release.outputs['packages/zod--tag_name'] }}
+      "packages/zod--release_created": ${{ steps.release.outputs['packages/zod--release_created'] }}
+      # Add more outputs for other packages here
+
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -31,39 +36,12 @@ jobs:
 
   release-zod:
     if: ${{ needs.release-please.outputs['packages/zod--release_created'] == 'true' }}
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/-template-package.release.yaml
     needs: release-please
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Cache root & workspace node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            packages/zod/node_modules
-          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', 'packages/zod/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-20-npm-
-
-      - run: npm ci
-
-      - run: npm run build --workspace=@proventuslabs/nestjs-zod
-
-      - run: zip -r zod-build.zip packages/zod/dist
-
-      - name: Upload build artifact
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ needs.release-please.outputs['packages/zod--tag_name'] }} zod-build.zip
-
-      - name: Publish to npm
-        run: npm publish --workspace=@proventuslabs/nestjs-zod --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    with:
+      package_name: zod
+      package_npm_workspace: "@proventuslabs/nestjs-zod"
+      package_tag_name: ${{ needs.release-please.outputs['packages/zod--tag_name'] }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
