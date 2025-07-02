@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   call-package-ci:
-    name: Run CI for multipart-form
+    name: Run CI
     uses: ./.github/workflows/-template-package.ci.yaml
     with:
       package_name: multipart-form
