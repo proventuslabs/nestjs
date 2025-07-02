@@ -12,14 +12,16 @@
 		"noUncheckedIndexedAccess": true,
 
 		/* Modules */
-		"module": "commonjs",
+		"module": "node18",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
+		"experimentalDecorators": true,
 
 		/* Emit */
 		"target": "es2022",
 		"baseUrl": ".",
 		"declaration": true,
+		"emitDecoratorMetadata": true,
 		"sourceMap": true,
 
 		/* Interop Constraints */

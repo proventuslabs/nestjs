@@ -10,7 +10,8 @@
 	},
 	"scripts": {},
 	"workspaces": [
-		"packages/*"
+		"packages/zod",
+		"packages/multipart-form"
 	],
 	"devDependencies": {
 		"@biomejs/biome": "2.0.0",

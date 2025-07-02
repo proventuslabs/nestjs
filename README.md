@@ -9,17 +9,34 @@ A collection of high-quality NestJS packages and utilities developed by Proventu
 A comprehensive collection of NestJS modules to integrate Zod into your application with enhanced configuration management and type safety.
 
 **Features:**
-- 🔧 Zod-powered configuration management
-- 🌍 Environment variable support with automatic parsing
-- 📁 YAML configuration file support
-- 🏗️ Configurable modules with Zod validation
-- 🎯 Full TypeScript support with automatic type inference
-- 🔄 Smart merge strategy (env vars override config files)
-- 📝 Descriptive error messages
+- 🔧 **Zod-powered Configuration**: Type-safe configuration management using Zod schemas
+- 🌍 **Environment Variable Support**: Automatic parsing and validation of environment variables
+- 📁 **Configuration Files**: Support for YAML configuration files
+- 🏗️ **Configurable Modules**: Enhanced NestJS configurable modules with Zod validation
+- 🎯 **Type Safety**: Full TypeScript support with automatic type inference
+- 🔄 **Merge Strategy**: Environment variables override configuration file values
+- 📝 **Descriptive Errors**: Enhanced error messages with schema descriptions
 
 **Installation:**
 ```bash
 npm install @proventuslabs/nestjs-zod
+```
+
+### [@proventuslabs/nestjs-multipart-form](./packages/multipart-form/)
+
+A lightweight and efficient NestJS package for handling multipart form data and file uploads with streaming support and type safety.
+
+**Features:**
+- 📁 **Streaming File Uploads** - Handle large files efficiently with Node.js streams
+- 🎯 **Type-Safe Decorators** - Built-in decorators for single and multiple file uploads
+- 🔧 **Flexible Configuration** - Customizable Busboy configuration options
+- 🛡️ **Validation Support** - Built-in validation for required files and fields
+- ⚡ **High Performance** - Lightweight implementation with minimal overhead (busboy)
+- 🔄 **Express Integration** - Seamless integration with Express.js applications
+
+**Installation:**
+```bash
+npm install @proventuslabs/nestjs-multipart-form
 ```
 
 ## 🛠️ Development

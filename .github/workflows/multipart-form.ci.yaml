@@ -1,0 +1,23 @@
+name: multipart-form Package CI
+
+on:
+  pull_request:
+    paths:
+      - packages/multipart-form/**
+      - .github/workflows/multipart-form.ci.yaml
+      - .github/workflows/-template-package.ci.yaml
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  call-package-ci:
+    name: Run CI
+    uses: ./.github/workflows/-template-package.ci.yaml
+    with:
+      package_name: multipart-form
+      package_npm_workspace: "@proventuslabs/nestjs-multipart-form"
