@@ -1,0 +1,168 @@
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: "The name of the package (e.g., zod, multipart-form)"
+        required: true
+        type: string
+      package_npm_workspace:
+        description: "The npm workspace name for the package (e.g., @proventuslabs/nestjs-zod)"
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build ${{ inputs.package_name }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ inputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package ${{ inputs.package_name }}
+        run: npm run build --workspace=${{ inputs.package_npm_workspace }}
+
+  typecheck:
+    name: Typecheck ${{ inputs.package_name }}
+    runs-on: ubuntu-latest
+    needs: build # Depends on build success
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ inputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript typecheck
+        run: |
+          npm run typecheck --workspace=${{ inputs.package_npm_workspace }} 2>&1 | \
+          sed -E 's/^([^:]+)\(([^,]+),([^)]+)\): (error|warning) [^:]+: (.*)$/::\4 file=\1,line=\2,col=\3::\5/'
+
+  test:
+    name: Test ${{ inputs.package_name }}
+    runs-on: ubuntu-latest
+    needs: build # Depends on build success
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ inputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --workspace=${{ inputs.package_npm_workspace }} -- --reporters=github-actions
+
+  lint:
+    name: Lint ${{ inputs.package_name }}
+    runs-on: ubuntu-latest
+    needs: build # Depends on build success
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ inputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome lint
+        run: npm run lint --workspace=${{ inputs.package_npm_workspace }} -- --reporter=github
+
+  format:
+    name: Format ${{ inputs.package_name }}
+    runs-on: ubuntu-latest
+    needs: build # Depends on build success
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ inputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Biome format
+        run: npm run format --workspace=${{ inputs.package_npm_workspace }} -- --reporter=github
