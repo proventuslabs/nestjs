@@ -46,7 +46,6 @@ jobs:
       package_tag_name: ${{ needs.release-please.outputs['packages/zod--tag_name'] }}
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release-multipart-form:
     if: ${{ needs.release-please.outputs['packages/multipart-form--release_created'] == 'true' }}
@@ -58,4 +57,3 @@ jobs:
       package_tag_name: ${{ needs.release-please.outputs['packages/multipart-form--tag_name'] }}
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
