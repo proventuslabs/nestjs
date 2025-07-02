@@ -24,12 +24,21 @@ export function handleFile(
 	}
 
 	// Duplicate the stream to make sure we consume and do not hang busboy
-	const tee = file.pipe(new PassThrough({
-		autoDestroy: true,
-		emitClose: true,
-		highWaterMark: config?.fileHwm,
-	}));
-	const upload = wrapReadableIntoMultipartFileUpload(tee, fieldname, filename, encoding, mimeType, fields);
+	const tee = file.pipe(
+		new PassThrough({
+			autoDestroy: true,
+			emitClose: true,
+			highWaterMark: config?.fileHwm,
+		}),
+	);
+	const upload = wrapReadableIntoMultipartFileUpload(
+		tee,
+		fieldname,
+		filename,
+		encoding,
+		mimeType,
+		fields,
+	);
 	files.push(upload);
 }
 

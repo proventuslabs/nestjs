@@ -40,7 +40,7 @@ export function wrapReadableIntoMultipartFileUpload(
 			writable: false,
 			enumerable: true,
 			configurable: false,
-		}
+		},
 	});
 
 	return wrapped as MultipartFileUpload;

@@ -10,7 +10,7 @@ export interface MultipartFileData {
 }
 
 export interface MultipartFileUpload extends Readable, MultipartFileData {
-	fields: MultipartFields
+	fields: MultipartFields;
 }
 
 declare module "express" {
