@@ -34,7 +34,7 @@
 
 		/* Paths */
 		"paths": {
-			"@proventuslabs/*": ["packages/*"]
+			"@proventuslabs/nestjs-*": ["packages/*"]
 		}
 	},
 	"exclude": ["node_modules"]

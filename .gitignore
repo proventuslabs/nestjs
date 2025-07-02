@@ -33,3 +33,4 @@
 # keep always ignored
 node_modules/
 dist/
+coverage/
