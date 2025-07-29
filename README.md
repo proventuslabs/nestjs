@@ -16,6 +16,7 @@ A comprehensive collection of NestJS modules to integrate Zod into your applicat
 - 🎯 **Type Safety**: Full TypeScript support with automatic type inference
 - 🔄 **Merge Strategy**: Environment variables override configuration file values
 - 📝 **Descriptive Errors**: Enhanced error messages with schema descriptions
+- 🔒 **Whitelist Support**: Allow specific environment variables to bypass namespace restrictions
 
 **Installation:**
 ```bash

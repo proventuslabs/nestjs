@@ -55,7 +55,13 @@ const appConfig = registerConfig(
       .enum(['development', 'production', 'test'])
       .default('development')
       .describe('The application environment'),
+    apiKey: z
+      .string()
+      .describe('API key for external services'),
   }),
+  {
+    whitelistKeys: new Set(['API_KEY']), // Allow API_KEY without APP_ prefix
+  }
 );
 
 // Type inference
@@ -117,6 +123,29 @@ APP_ENVIRONMENT=production
 APP_DATABASE__HOST=localhost
 APP_DATABASE__PORT=5432
 APP_DATABASE__NAME=myapp
+```
+
+#### Whitelist Keys
+
+By default, only environment variables with the namespace prefix are processed. You can whitelist additional environment variables to bypass this restriction:
+
+```typescript
+const appConfig = registerConfig(
+  'app',
+  z.object({
+    port: z.number().default(3000),
+    apiKey: z.string().describe('API key from environment'),
+  }),
+  {
+    whitelistKeys: new Set(['API_KEY']), // Allow API_KEY without APP_ prefix
+  }
+);
+```
+
+This allows you to use environment variables like:
+```bash
+API_KEY=your-secret-key  # Will be mapped to app.apiKey
+APP_PORT=8080            # Standard namespaced variable
 ```
 
 ### Configuration Files
@@ -218,16 +247,39 @@ Registers a configuration with the `ConfigModule.forFeature` for partial configu
 function registerConfig<N extends string, C extends ConfigObject, I extends JsonValue>(
   namespace: ConfigNamespace<N>,
   configSchema: ZodType<C, ZodTypeDef, I>,
-  variables?: Record<string, string | undefined>
+  options?: {
+    whitelistKeys?: Set<string>;
+    variables?: Record<string, string | undefined>;
+  }
 ): ReturnType<typeof registerAs<C>> & { NAMESPACE: N }
 ```
 
 **Parameters:**
 - `namespace`: The namespace for the configuration (camelCase)
 - `configSchema`: Zod schema for validation
-- `variables`: Environment variables object (defaults to `process.env`)
+- `options`: Configuration options
+  - `whitelistKeys`: Set of environment variable names to allow without namespace prefix
+  - `variables`: Environment variables object (defaults to `process.env`)
 
 **Returns:** A configuration provider that can be used with `ConfigModule.forRoot()`
+
+**Example:**
+```typescript
+const appConfig = registerConfig(
+  'app',
+  z.object({
+    port: z.number().default(3000),
+    apiKey: z.string(),
+    database: z.object({
+      host: z.string().default('localhost'),
+      port: z.number().default(5432),
+    }),
+  }),
+  {
+    whitelistKeys: new Set(['API_KEY', 'DATABASE_URL']),
+  }
+);
+```
 
 ### `ConfigType<T>`
 
@@ -285,6 +337,72 @@ TypeError: Configuration validation failed for 'app' namespace
 ```
 
 ## Examples
+
+### Basic Configuration with Whitelist Keys
+
+```typescript
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { registerConfig, type ConfigType } from '@proventuslabs/nestjs-zod';
+import { z } from 'zod';
+
+// Configuration with whitelist support
+const appConfig = registerConfig(
+  'app',
+  z.object({
+    port: z.number().default(3000),
+    host: z.string().default('localhost'),
+    apiKey: z.string().describe('External API key'),
+    database: z.object({
+      url: z.string().describe('Database connection URL'),
+      poolSize: z.number().default(10),
+    }),
+  }),
+  {
+    whitelistKeys: new Set(['API_KEY', 'DATABASE_URL']),
+  }
+);
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig],
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+With this configuration, you can use environment variables like:
+```bash
+# Standard namespaced variables
+APP_PORT=8080
+APP_HOST=0.0.0.0
+
+# Whitelisted variables (no namespace prefix required)
+API_KEY=your-secret-key
+DATABASE_URL=postgresql://user:pass@localhost:5432/db
+```
+
+### Advanced Configuration with Multiple Sources
+
+```typescript
+const databaseConfig = registerConfig(
+  'database',
+  z.object({
+    host: z.string().default('localhost'),
+    port: z.number().default(5432),
+    name: z.string(),
+    username: z.string(),
+    password: z.string(),
+    ssl: z.boolean().default(false),
+  }),
+  {
+    whitelistKeys: new Set(['DB_HOST', 'DB_PORT', 'DB_NAME']),
+  }
+);
+```
 
 See the [examples](./examples) directory for complete working examples.
 
