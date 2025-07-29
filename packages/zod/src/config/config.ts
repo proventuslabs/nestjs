@@ -35,8 +35,8 @@ export type NamespacedConfigType<
 	// biome-ignore lint/suspicious/noExplicitAny: needed to prevent circular dependency during infer of the config shape
 	R extends ReturnType<typeof registerConfig<string, any, any>>,
 > = {
-		[K in R["NAMESPACE"]]: NestConfigType<R>;
-	};
+	[K in R["NAMESPACE"]]: NestConfigType<R>;
+};
 
 /**
  * Registers a config with the `ConfigModule.forFeature` for partial configuration under the provided namespace.
@@ -68,9 +68,9 @@ export function registerConfig<N extends string, C extends ConfigObject, I exten
 	namespace: ConfigNamespace<N>,
 	configSchema: ZodType<C, ZodTypeDef, I>,
 	options: {
-		whitelistKeys?: Set<string>,
-		variables?: Record<string, string | undefined>,
-	} = {}
+		whitelistKeys?: Set<string>;
+		variables?: Record<string, string | undefined>;
+	} = {},
 ) {
 	const { variables = process.env, whitelistKeys } = options;
 

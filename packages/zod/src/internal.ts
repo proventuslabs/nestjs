@@ -151,11 +151,14 @@ function jsonify(value: string | undefined): JsonValue | undefined {
 export function decodeVariables(
 	variables: Record<string, string | undefined>,
 	namespace: string,
-	whitelistKeys: Set<string> = new Set()
+	whitelistKeys: Set<string> = new Set(),
 ): readonly [Record<string, JsonValue | undefined>, Map<string, string>] {
 	const envKeys = new Map<string, string>();
 	const envNamespace = snakeCase(namespace).toUpperCase();
-	const relevantEnv = pickBy(variables, (_value, key) => key.startsWith(envNamespace) || whitelistKeys.has(key));
+	const relevantEnv = pickBy(
+		variables,
+		(_value, key) => key.startsWith(envNamespace) || whitelistKeys.has(key),
+	);
 	const decodedEnv = reduce(
 		relevantEnv,
 		(env, value, key) => {

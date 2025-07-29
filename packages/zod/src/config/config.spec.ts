@@ -52,7 +52,7 @@ describe("config", () => {
 			{
 				variables: {
 					APP_NOT_MISSING: "not missing",
-				}
+				},
 			},
 		);
 
@@ -75,8 +75,8 @@ describe("config", () => {
 			{
 				variables: {
 					NOT_SCOPED: "not missing",
-				}
-			}
+				},
+			},
 		);
 
 		const moduleRef = Test.createTestingModule({
@@ -99,7 +99,7 @@ describe("config", () => {
 				whitelistKeys: new Set(["NOT_SCOPED"]),
 				variables: {
 					NOT_SCOPED: "not missing",
-				}
+				},
 			},
 		);
 
