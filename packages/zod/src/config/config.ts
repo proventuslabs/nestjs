@@ -49,6 +49,7 @@ export type NamespacedConfigType<
  *
  * @param namespace - The namespace of the config
  * @param configSchema - The schema of the config
+ * @param whitelistKeys - Set of keys to be whitelisted and get passed to the schema as-is
  * @param variables - The environment variables - defaults to `process.env`
  *
  * @throws {TypeError} If the environment variables or configuration file content do not match the schema.
@@ -66,10 +67,15 @@ export type NamespacedConfigType<
 export function registerConfig<N extends string, C extends ConfigObject, I extends JsonValue>(
 	namespace: ConfigNamespace<N>,
 	configSchema: ZodType<C, ZodTypeDef, I>,
-	variables: Record<string, string | undefined> = process.env,
+	options: {
+		whitelistKeys?: Set<string>;
+		variables?: Record<string, string | undefined>;
+	} = {},
 ) {
+	const { variables = process.env, whitelistKeys } = options;
+
 	const service = registerAs(namespace, async () => {
-		const [decodedEnv, envKeys] = decodeVariables(variables, namespace);
+		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
 		const decodedConfig = decodeConfig(variables.CONFIG_CONTENT, variables.CONFIG_FILE);
 
 		const namespacedSchema = z.object({
