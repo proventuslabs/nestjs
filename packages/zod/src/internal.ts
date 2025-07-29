@@ -132,7 +132,7 @@ function jsonify(value: string | undefined): JsonValue | undefined {
  *
  * With namespace "myApp" into:
  * {
- *   "my_app": {
+ *   "myApp": {
  *     "server": {
  *       "host": "localhost"
  *     },
@@ -151,13 +151,16 @@ function jsonify(value: string | undefined): JsonValue | undefined {
 export function decodeVariables(
 	variables: Record<string, string | undefined>,
 	namespace: string,
+	whitelistKeys: Set<string> = new Set()
 ): readonly [Record<string, JsonValue | undefined>, Map<string, string>] {
 	const envKeys = new Map<string, string>();
 	const envNamespace = snakeCase(namespace).toUpperCase();
-	const relevantEnv = pickBy(variables, (_value, key) => key.startsWith(envNamespace));
+	const relevantEnv = pickBy(variables, (_value, key) => key.startsWith(envNamespace) || whitelistKeys.has(key));
 	const decodedEnv = reduce(
 		relevantEnv,
 		(env, value, key) => {
+			if (whitelistKeys.has(key)) key = `${envNamespace}_${key}`;
+
 			const newKey = nestedConventionNamespaced(key, envNamespace);
 			envKeys.set(newKey, key);
 			const newValue = jsonify(value);
