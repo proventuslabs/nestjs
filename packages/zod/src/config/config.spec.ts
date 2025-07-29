@@ -7,7 +7,7 @@ import { registerConfig } from "./config";
 
 describe("config", () => {
 	it("should register config with ConfigModule.forFeature", async () => {
-		const config = registerConfig("app", z.object({}), new Set(), {});
+		const config = registerConfig("app", z.object({}));
 
 		const moduleRef = await Test.createTestingModule({
 			imports: [ConfigModule.forFeature(config)],
@@ -30,8 +30,6 @@ describe("config", () => {
 					.default(9556)
 					.describe("The local HTTP port to bind the server to"),
 			}),
-			new Set(),
-			{},
 		);
 
 		const moduleRef = await Test.createTestingModule({
@@ -51,9 +49,10 @@ describe("config", () => {
 			z.object({
 				missing: z.string().describe("This is a required field"),
 			}),
-			new Set(),
 			{
-				APP_NOT_MISSING: "not missing",
+				variables: {
+					APP_NOT_MISSING: "not missing",
+				}
 			},
 		);
 
@@ -73,10 +72,11 @@ describe("config", () => {
 			z.object({
 				notScoped: z.string().describe("This is a required field"),
 			}),
-			new Set(),
 			{
-				NOT_SCOPED: "not missing",
-			},
+				variables: {
+					NOT_SCOPED: "not missing",
+				}
+			}
 		);
 
 		const moduleRef = Test.createTestingModule({
@@ -95,9 +95,11 @@ describe("config", () => {
 			z.object({
 				notScoped: z.string().describe("This is a required field"),
 			}),
-			new Set(["NOT_SCOPED"]),
 			{
-				NOT_SCOPED: "not missing",
+				whitelistKeys: new Set(["NOT_SCOPED"]),
+				variables: {
+					NOT_SCOPED: "not missing",
+				}
 			},
 		);
 

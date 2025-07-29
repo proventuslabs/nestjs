@@ -67,9 +67,13 @@ export type NamespacedConfigType<
 export function registerConfig<N extends string, C extends ConfigObject, I extends JsonValue>(
 	namespace: ConfigNamespace<N>,
 	configSchema: ZodType<C, ZodTypeDef, I>,
-	whitelistKeys: Set<string> = new Set(),
-	variables: Record<string, string | undefined> = process.env,
+	options: {
+		whitelistKeys?: Set<string>,
+		variables?: Record<string, string | undefined>,
+	} = {}
 ) {
+	const { variables = process.env, whitelistKeys } = options;
+
 	const service = registerAs(namespace, async () => {
 		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
 		const decodedConfig = decodeConfig(variables.CONFIG_CONTENT, variables.CONFIG_FILE);
