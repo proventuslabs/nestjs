@@ -13,7 +13,7 @@ export function multipartFileFactory(
 
 	const request = ctx.switchToHttp().getRequest<Request>();
 
-	const files = request.files || [];
+	const files = request.files ?? [];
 
 	let fieldname: string;
 	let required = true;
@@ -22,7 +22,7 @@ export function multipartFileFactory(
 		fieldname = options;
 	} else {
 		fieldname = options.fieldname;
-		required = options.required ?? false;
+		required = options.required ?? required;
 	}
 
 	const file = files.find((file) => file.fieldname === fieldname);

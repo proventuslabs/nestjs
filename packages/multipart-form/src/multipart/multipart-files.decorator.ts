@@ -12,7 +12,7 @@ export function multipartFilesFactory(
 	if (ctx.getType() !== "http") return [];
 
 	const request = ctx.switchToHttp().getRequest<Request>();
-	const files = request.files || [];
+	const files = request.files ?? [];
 
 	let fieldnames: string[] | undefined;
 	let required = true;
@@ -23,7 +23,7 @@ export function multipartFilesFactory(
 		fieldnames = options;
 	} else {
 		fieldnames = options?.fieldnames;
-		required = options?.required ?? false;
+		required = options?.required ?? required;
 	}
 
 	// If no fieldnames specified, return all files

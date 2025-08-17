@@ -13,8 +13,8 @@ export interface MultipartFileUpload extends Readable, MultipartFileData {
 	fields: MultipartFields;
 }
 
-declare module "express" {
-	interface Request {
-		files?: MultipartFileUpload[];
-	}
+declare module "http" {
+  interface IncomingMessage {
+    files?: MultipartFileUpload[];
+  }
 }
