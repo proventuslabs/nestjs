@@ -199,13 +199,7 @@ export class ZodConfigurableModuleBuilder<
 								return await self.schema.parseAsync(finalOptions);
 							} catch (err) {
 								if (err instanceof ZodError) {
-									throw zodErrorToTypeError(
-										err,
-										self.schema,
-										this.name,
-										new Map(),
-										false,
-									);
+									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
 								}
 								throw err;
 							}
@@ -306,13 +300,7 @@ export class ZodConfigurableModuleBuilder<
 								return await self.schema.parseAsync(finalOptions);
 							} catch (err) {
 								if (err instanceof ZodError) {
-									throw zodErrorToTypeError(
-										err,
-										self.schema,
-										this.name,
-										new Map(),
-										false,
-									);
+									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
 								}
 								throw err;
 							}
@@ -327,7 +315,7 @@ export class ZodConfigurableModuleBuilder<
 							ModuleOptionsInput,
 							FactoryClassMethodKey
 						>,
-					// NOTE: instead of => await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]()
+						// NOTE: instead of => await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]()
 					) => {
 						const finalOptions =
 							await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]();
@@ -335,13 +323,7 @@ export class ZodConfigurableModuleBuilder<
 							return await self.schema.parseAsync(finalOptions);
 						} catch (err) {
 							if (err instanceof ZodError) {
-								throw zodErrorToTypeError(
-									err,
-									self.schema,
-									this.name,
-									new Map(),
-									false,
-								);
+								throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
 							}
 							throw err;
 						}

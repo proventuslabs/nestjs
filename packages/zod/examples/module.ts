@@ -1,12 +1,4 @@
-import {
-	ConfigurableModuleBuilder,
-	Inject,
-	Injectable,
-	Logger,
-	Module,
-	type OnModuleInit,
-	Optional,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, Module, type OnModuleInit, Optional } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { ZodConfigurableModuleBuilder } from "@proventuslabs/nestjs-zod";
 
@@ -49,7 +41,7 @@ export class NestedModule {}
 
 @Module({
 	// @ts-expect-error
-	imports: [DynModule.register({ timeout: 'wtf' }), NestedModule],
+	imports: [DynModule.register({ timeout: "wtf" }), NestedModule],
 })
 class AppModule {}
 
