@@ -3,10 +3,10 @@ import { PassThrough, Readable } from "node:stream";
 import type busboy from "busboy";
 
 import { handleField, handleFile, parseMultipartData } from "./multipart.parser";
-import type { MultipartFields, MultipartFileUpload } from "./multipart.types";
+import type { MultipartFields, MultipartFileStream } from "./multipart.types";
 
 describe("handleFile", () => {
-	let files: MultipartFileUpload[];
+	let files: MultipartFileStream[];
 	let mockFile: Readable;
 	let mockInfo: busboy.FileInfo;
 

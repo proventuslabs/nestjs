@@ -1,46 +1,80 @@
 import {
-	BadRequestException,
 	type CallHandler,
 	type ExecutionContext,
+	Inject,
 	Injectable,
-	Logger,
 	type NestInterceptor,
+	Optional,
 } from "@nestjs/common";
 
-import type busboy from "busboy";
 import type { Request } from "express";
-import { defer, type Observable, throwError } from "rxjs";
-import { catchError, finalize, mergeMap } from "rxjs/operators";
+import { type Observable, Subject } from "rxjs";
+import { finalize, switchMap, tap } from "rxjs/operators";
 
+import { MODULE_OPTIONS_TOKEN } from "./multipart.module-definition";
 import { parseMultipartData } from "./multipart.parser";
+import type { MultipartOptions } from "./multipart.types";
 
-export function MultipartInterceptor(config?: Omit<busboy.BusboyConfig, "headers">) {
+/**
+ * Creates a NestJS HTTP interceptor that parses multipart/form-data requests.
+ *
+ * This interceptor:
+ * - Uses `busboy` under the hood to process incoming files and fields from the request.
+ * - Attaches `files` and `fields` streams to `req.files` and `req.fields` for downstream handlers.
+ * - Ensures proper cleanup of file streams after the request is handled.
+ * - Only applies to HTTP requests; other contexts are passed through unchanged.
+ *
+ * @param localOptions Optional configuration for the multipart parser, matching `MultipartOptions`.
+ * @returns A NestJS interceptor class that can be applied via `@UseInterceptors`.
+ *
+ * @example
+ * ‍@Post('upload')
+ * ‍@UseInterceptors(MultipartInterceptor({ limits: { files: 5 } }))
+ * upload(‍@Req() req) {
+ *   // Access uploaded files and fields via req.files and req.fields
+ * }
+ */
+export function MultipartInterceptor(localOptions?: MultipartOptions) {
 	@Injectable()
 	class MultipartInterceptor implements NestInterceptor {
-		readonly logger = new Logger(MultipartInterceptor.name);
+		constructor(
+			@Optional()
+			@Inject(MODULE_OPTIONS_TOKEN)
+			readonly globalOptions?: MultipartOptions,
+		) {}
 
 		intercept(ctx: ExecutionContext, next: CallHandler<unknown>): Observable<unknown> {
 			if (ctx.getType() !== "http") return next.handle();
 
 			const req = ctx.switchToHttp().getRequest<Request>();
 
-			return defer(() => parseMultipartData(req, req.headers, config)).pipe(
-				catchError((err) =>
-					throwError(() => new BadRequestException("invalid multipart request", { cause: err })),
-				),
-				mergeMap(([files, fields]) => {
+			const done$ = new Subject<never>();
+
+			const parser$ = parseMultipartData(
+				req,
+				req.headers,
+				done$,
+				localOptions ?? this.globalOptions,
+			).pipe(
+				tap(({ files, fields }) => {
 					req.files = files;
-					req.body = fields;
-					return next.handle();
-				}),
-				finalize(() => {
-					for (const file of req.files ?? []) {
-						if (!file.readableEnded) {
-							file.resume();
-						}
-					}
+					req.fields = fields;
 				}),
 			);
+
+			const cleanup = () => {
+				done$.complete();
+
+				if (!req.files) return Promise.resolve();
+
+				return req.files
+					.forEach((file) => {
+						if (!file.readableEnded) file.resume();
+					})
+					.catch(() => {});
+			};
+
+			return parser$.pipe(switchMap(() => next.handle().pipe(finalize(cleanup))));
 		}
 	}
 

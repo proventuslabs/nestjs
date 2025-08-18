@@ -1,53 +1,39 @@
-import { BadRequestException, createParamDecorator, type ExecutionContext } from "@nestjs/common";
+import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 import type { Request } from "express";
 import { isArray, isEmpty, isString, isUndefined } from "lodash";
+import { EMPTY, filter, iif, type Observable } from "rxjs";
 
-import type { MultipartFileUpload } from "./multipart.types";
+import type { MultipartFileStream } from "./multipart.types";
 
 export function multipartFilesFactory(
-	options: string | string[] | { fieldnames?: string[]; required?: boolean } | undefined,
+	options: string | string[] | { fieldnames?: string[] } | undefined,
 	ctx: ExecutionContext,
-): MultipartFileUpload[] {
-	if (ctx.getType() !== "http") return [];
+): Observable<MultipartFileStream> {
+	if (ctx.getType() !== "http") return EMPTY;
 
 	const request = ctx.switchToHttp().getRequest<Request>();
-	const files = request.files || [];
+	const files$ = request.files;
+
+	if (!files$) return EMPTY;
 
 	let fieldnames: string[] | undefined;
-	let required = true;
-
 	if (isString(options)) {
 		fieldnames = [options];
 	} else if (isArray(options)) {
 		fieldnames = options;
 	} else {
 		fieldnames = options?.fieldnames;
-		required = options?.required ?? false;
 	}
 
-	// If no fieldnames specified, return all files
-	if (isUndefined(fieldnames) || isEmpty(fieldnames)) {
-		if (required && files.length === 0) {
-			throw new BadRequestException(`At least one file is required.`);
-		}
+	const filteredFiles$ = iif(
+		() => isUndefined(fieldnames) || isEmpty(fieldnames.length),
+		files$,
+		// biome-ignore lint/style/noNonNullAssertion: condition is checked above
+		files$.pipe(filter((file) => fieldnames!.includes(file.fieldname))),
+	);
 
-		return files;
-	}
-
-	const matchedFiles = files.filter((file) => fieldnames.includes(file.fieldname));
-
-	if (required) {
-		const missingFields = fieldnames.filter(
-			(name) => !matchedFiles.find((f) => f.fieldname === name),
-		);
-
-		if (missingFields.length > 0) {
-			throw new BadRequestException(`Missing required file fields: ${missingFields.join(", ")}`);
-		}
-	}
-
-	return matchedFiles;
+	return filteredFiles$;
 }
 
 export const MultipartFiles = createParamDecorator(multipartFilesFactory);
