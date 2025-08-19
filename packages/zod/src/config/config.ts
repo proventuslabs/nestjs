@@ -3,7 +3,7 @@ import process from "node:process";
 import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from "@nestjs/config";
 
 import { merge } from "lodash";
-import type { CamelCase, JsonValue, ScreamingSnakeCase } from "type-fest";
+import type { CamelCase, JsonValue } from "type-fest";
 import z from "zod/v4";
 import type { $ZodType } from "zod/v4/core";
 
@@ -73,7 +73,7 @@ export function registerConfig<
 	namespace: ConfigNamespace<N>,
 	configSchema: $ZodType<C, I>,
 	options: {
-		whitelistKeys?: Set<ScreamingSnakeCase<keyof C> | string>;
+		whitelistKeys?: Set<string>;
 		variables?: Record<string, string | undefined>;
 	} = {},
 ) {
