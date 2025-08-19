@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { ZodConfigurableModuleBuilder } from "./module";
 

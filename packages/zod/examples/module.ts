@@ -2,11 +2,16 @@ import { Inject, Injectable, Logger, Module, type OnModuleInit, Optional } from 
 import { NestFactory } from "@nestjs/core";
 import { ZodConfigurableModuleBuilder } from "@proventuslabs/nestjs-zod";
 
-import z from "zod";
+import z from "zod/v4";
 
 export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN, OPTIONS_TYPE } =
 	// new ConfigurableModuleBuilder<{ timeout: number }>()
-	new ZodConfigurableModuleBuilder(z.object({ timeout: z.number().default(100) }))
+	new ZodConfigurableModuleBuilder(
+		z.object({
+			timeout: z.number().default(100).describe("Timeout in ms"),
+			nested: z.object({ key: z.string().describe("I'm nested key") }),
+		}),
+	)
 		.setExtras(
 			{
 				isGlobal: true,
@@ -41,7 +46,7 @@ export class NestedModule {}
 
 @Module({
 	// @ts-expect-error
-	imports: [DynModule.register({ timeout: "wtf" }), NestedModule],
+	imports: [DynModule.register({ timeout: "wtf", nested: { key: 1 } }), NestedModule],
 })
 class AppModule {}
 

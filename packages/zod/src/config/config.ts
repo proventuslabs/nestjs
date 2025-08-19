@@ -3,10 +3,11 @@ import process from "node:process";
 import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from "@nestjs/config";
 
 import { merge } from "lodash";
-import type { CamelCase, JsonValue } from "type-fest";
-import { type ZodType, type ZodTypeDef, z } from "zod";
+import type { CamelCase, JsonValue, ScreamingSnakeCase } from "type-fest";
+import z from "zod/v4";
+import type { $ZodType } from "zod/v4/core";
 
-import { decodeConfig, decodeVariables, zodErrorToTypeError } from "../internal";
+import { decodeConfig, decodeVariables, typifyError } from "../internal";
 
 /**
  * Simple type alias for config namespace.
@@ -64,11 +65,15 @@ export type NamespacedConfigType<
  * export type AppConfigNamespaced = NamespacedConfigType<typeof appConfig>;
  * export type AppConfig = ConfigType<typeof appConfig>;
  */
-export function registerConfig<N extends string, C extends ConfigObject, I extends JsonValue>(
+export function registerConfig<
+	N extends string,
+	C extends ConfigObject,
+	I extends JsonValue | unknown,
+>(
 	namespace: ConfigNamespace<N>,
-	configSchema: ZodType<C, ZodTypeDef, I>,
+	configSchema: $ZodType<C, I>,
 	options: {
-		whitelistKeys?: Set<string>;
+		whitelistKeys?: Set<ScreamingSnakeCase<keyof C> | string>;
 		variables?: Record<string, string | undefined>;
 	} = {},
 ) {
@@ -85,8 +90,8 @@ export function registerConfig<N extends string, C extends ConfigObject, I exten
 			merge({ [namespace]: {} }, decodedConfig, decodedEnv),
 		);
 		if (!parsedConfig.success)
-			throw zodErrorToTypeError(parsedConfig.error, namespacedSchema, namespace, envKeys);
-		const config: C = parsedConfig.data[namespace];
+			throw typifyError(namespacedSchema, parsedConfig.error, "config", namespace, envKeys);
+		const config = parsedConfig.data[namespace];
 
 		return config;
 	}) as ReturnType<typeof registerAs<C>> & { NAMESPACE: N };
