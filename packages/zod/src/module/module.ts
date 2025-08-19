@@ -1,45 +1,80 @@
+// biome-ignore-all lint/complexity/noThisInStatic: NestJS monkey types compat
+// biome-ignore-all lint/style/noNonNullAssertion: NestJS monkey types compat
+
 import {
 	type ConfigurableModuleAsyncOptions,
-	ConfigurableModuleBuilder,
 	type ConfigurableModuleBuilderOptions,
+	type ConfigurableModuleOptionsFactory,
 	type DynamicModule,
+	Logger,
 	type Provider,
 } from "@nestjs/common";
-import type {
+import {
+	ASYNC_METHOD_SUFFIX,
+	CONFIGURABLE_MODULE_ID,
 	DEFAULT_FACTORY_CLASS_METHOD_KEY,
 	DEFAULT_METHOD_KEY,
 } from "@nestjs/common/module-utils/constants";
 
-import { isObject, keys, omit } from "lodash";
 import { ZodError, type ZodType, type ZodTypeDef } from "zod";
 
 import { zodErrorToTypeError } from "../internal";
+import type { ZodConfigurableModuleCls, ZodConfigurableModuleHost } from "./module.interfaces";
+import {
+	generateOptionsInjectionToken,
+	getInjectionProviders,
+	randomStringGenerator,
+} from "./utils";
 
 export class ZodConfigurableModuleBuilder<
 	ModuleOptions,
-	ModuleOptionsInput = unknown,
+	ModuleOptionsInput,
 	StaticMethodKey extends string = typeof DEFAULT_METHOD_KEY,
 	FactoryClassMethodKey extends string = typeof DEFAULT_FACTORY_CLASS_METHOD_KEY,
 	ExtraModuleDefinitionOptions = object,
 > {
-	protected base: ConfigurableModuleBuilder<
-		ModuleOptionsInput,
-		StaticMethodKey,
-		FactoryClassMethodKey,
-		ExtraModuleDefinitionOptions
-	>;
+	protected staticMethodKey!: StaticMethodKey;
+	protected factoryClassMethodKey!: FactoryClassMethodKey;
+	protected extras!: ExtraModuleDefinitionOptions;
+	protected transformModuleDefinition!: (
+		definition: DynamicModule,
+		extraOptions: ExtraModuleDefinitionOptions,
+	) => DynamicModule;
 
-	private transformSet = false;
+	protected readonly logger = new Logger(ZodConfigurableModuleBuilder.name);
 
 	public constructor(
 		protected readonly schema: ZodType<ModuleOptions, ZodTypeDef, ModuleOptionsInput>,
 		protected readonly options: ConfigurableModuleBuilderOptions = {},
-		parentBuilder?: ConfigurableModuleBuilder<ModuleOptionsInput>,
+		parentBuilder?: ZodConfigurableModuleBuilder<ModuleOptions, ModuleOptionsInput>,
 	) {
-		this.base = new ConfigurableModuleBuilder(options, parentBuilder);
+		if (parentBuilder) {
+			this.staticMethodKey = parentBuilder.staticMethodKey as StaticMethodKey;
+			this.factoryClassMethodKey = parentBuilder.factoryClassMethodKey as FactoryClassMethodKey;
+			this.transformModuleDefinition = parentBuilder.transformModuleDefinition as (
+				definition: DynamicModule,
+				extraOptions: ExtraModuleDefinitionOptions,
+			) => DynamicModule;
+			this.extras = parentBuilder.extras as ExtraModuleDefinitionOptions;
+		}
 	}
 
-	public setExtras<ExtraModuleDefinitionOptions>(
+	/**
+	 * Registers the "extras" object (a set of extra options that can be used to modify the dynamic module definition).
+	 * Values you specify within the "extras" object will be used as default values (that can be overridden by module consumers).
+	 *
+	 * This method also applies the so-called "module definition transform function" that takes the auto-generated
+	 * dynamic module object ("DynamicModule") and the actual consumer "extras" object as input parameters.
+	 * The "extras" object consists of values explicitly specified by module consumers and default values.
+	 *
+	 * @example
+	 * ```typescript
+	 * .setExtras<{ isGlobal?: boolean }>({ isGlobal: false }, (definition, extras) =>
+	 *    ({ ...definition, global: extras.isGlobal })
+	 * )
+	 * ```
+	 */
+	setExtras<ExtraModuleDefinitionOptions>(
 		extras: ExtraModuleDefinitionOptions,
 		transformDefinition: (
 			definition: DynamicModule,
@@ -52,231 +87,276 @@ export class ZodConfigurableModuleBuilder<
 			StaticMethodKey,
 			FactoryClassMethodKey,
 			ExtraModuleDefinitionOptions
-			// biome-ignore lint/suspicious/noExplicitAny: cast this to any for interop with NestJS configurable class
-		>(this.schema, this.options, this as any);
-
-		// this was called and we patched
-		this.transformSet = true;
-
-		builder.base = this.patchTransform(extras, transformDefinition);
-
+		>(this.schema, this.options, this);
+		builder.extras = extras;
+		builder.transformModuleDefinition = transformDefinition;
 		return builder;
 	}
 
-	private patchTransform<ExtraModuleDefinitionOptions>(
-		extras: ExtraModuleDefinitionOptions,
-		transformDefinition: (
-			definition: DynamicModule,
-			extras: ExtraModuleDefinitionOptions,
-		) => DynamicModule = (def) => def,
-	) {
-		transformDefinition ??= (definition) => definition;
-
-		const existingTransform = transformDefinition;
-
-		transformDefinition = (definition, extraOptions) => {
-			const result = existingTransform(definition, extraOptions);
-
-			return this.transformModuleDefinitionWithSchema(result, extraOptions, extras);
-		};
-
-		return this.base.setExtras(extras, transformDefinition);
-	}
-
-	public setClassMethodName<StaticMethodKey extends string>(key: StaticMethodKey) {
+	/**
+	 * Dynamic modules must expose public static methods that let you pass in
+	 * configuration parameters (control the module's behavior from the outside).
+	 * Some frequently used names that you may have seen in other modules are:
+	 * "forRoot", "forFeature", "register", "configure".
+	 *
+	 * This method "setClassMethodName" lets you specify the name of the
+	 * method that will be auto-generated.
+	 *
+	 * @param key name of the method
+	 */
+	setClassMethodName<StaticMethodKey extends string>(key: StaticMethodKey) {
 		const builder = new ZodConfigurableModuleBuilder<
 			ModuleOptions,
 			ModuleOptionsInput,
 			StaticMethodKey,
 			FactoryClassMethodKey,
 			ExtraModuleDefinitionOptions
-			// biome-ignore lint/suspicious/noExplicitAny: cast this to any for interop with NestJS configurable class
-		>(this.schema, this.options, this as any);
-		builder.base = builder.base.setClassMethodName(key);
-
+		>(this.schema, this.options, this);
+		builder.staticMethodKey = key;
 		return builder;
 	}
 
-	public setFactoryMethodName<FactoryClassMethodKey extends string>(key: FactoryClassMethodKey) {
+	/**
+	 * Asynchronously configured modules (that rely on other modules, i.e. "ConfigModule")
+	 * let you pass the configuration factory class that will be registered and instantiated as a provider.
+	 * This provider then will be used to retrieve the module's configuration. To provide the configuration,
+	 * the corresponding factory method must be implemented.
+	 *
+	 * This method ("setFactoryMethodName") lets you control what method name will have to be
+	 * implemented by the config factory (default is "create").
+	 *
+	 * @param key name of the method
+	 */
+	setFactoryMethodName<FactoryClassMethodKey extends string>(key: FactoryClassMethodKey) {
 		const builder = new ZodConfigurableModuleBuilder<
 			ModuleOptions,
 			ModuleOptionsInput,
 			StaticMethodKey,
 			FactoryClassMethodKey,
 			ExtraModuleDefinitionOptions
-			// biome-ignore lint/suspicious/noExplicitAny: cast this to any for interop with NestJS configurable class
-		>(this.schema, this.options, this as any);
-		builder.base = builder.base.setFactoryMethodName(key);
-
+		>(this.schema, this.options, this);
+		builder.factoryClassMethodKey = key;
 		return builder;
 	}
 
-	public build(): ZodConfigurableModuleHost<
+	/**
+	 * Returns an object consisting of multiple properties that lets you
+	 * easily construct dynamic configurable modules. See "ConfigurableModuleHost" interface for more details.
+	 */
+	build(): ZodConfigurableModuleHost<
 		ModuleOptions,
 		ModuleOptionsInput,
 		StaticMethodKey,
 		FactoryClassMethodKey,
 		ExtraModuleDefinitionOptions
 	> {
-		if (!this.transformSet) this.base = this.patchTransform({} as ExtraModuleDefinitionOptions);
+		this.staticMethodKey ??= DEFAULT_METHOD_KEY as StaticMethodKey;
+		this.factoryClassMethodKey ??= DEFAULT_FACTORY_CLASS_METHOD_KEY as FactoryClassMethodKey;
+		this.options.optionsInjectionToken ??= this.options.moduleName
+			? this.constructInjectionTokenString()
+			: generateOptionsInjectionToken();
+		this.transformModuleDefinition ??= (definition) => definition;
 
-		return this.base.build() as unknown as ZodConfigurableModuleHost<
-			ModuleOptions,
-			ModuleOptionsInput,
-			StaticMethodKey,
-			FactoryClassMethodKey,
-			ExtraModuleDefinitionOptions
-		>;
+		return {
+			ConfigurableModuleClass: this.createConfigurableModuleCls<ModuleOptions>(),
+			MODULE_OPTIONS_TOKEN: this.options.optionsInjectionToken,
+			ASYNC_OPTIONS_TYPE: this.createTypeProxy("ASYNC_OPTIONS_TYPE"),
+			ASYNC_OPTIONS_INPUT_TYPE: this.createTypeProxy("ASYNC_OPTIONS_INPUT_TYPE"),
+			OPTIONS_TYPE: this.createTypeProxy("OPTIONS_TYPE"),
+			OPTIONS_INPUT_TYPE: this.createTypeProxy("OPTIONS_INPUT_TYPE"),
+		};
 	}
 
-	private transformModuleDefinitionWithSchema<ExtraModuleDefinitionOptions>(
-		definition: DynamicModule,
-		extraOptions: ExtraModuleDefinitionOptions,
-		extras: unknown,
-	): DynamicModule {
-		const isOptionProvider = (provider: Provider) =>
-			"provide" in provider && provider.provide === this.options.optionsInjectionToken;
-		definition.providers = definition.providers?.map((provider) => {
-			if (isOptionProvider(provider)) {
-				if ("useFactory" in provider) {
-					const existingFactory = provider.useFactory;
-					provider.useFactory = async (...args) => {
-						try {
-							return await this.schema.parseAsync(existingFactory(...args));
-						} catch (err) {
-							if (err instanceof ZodError) {
-								throw zodErrorToTypeError(
-									err,
-									this.schema,
-									definition.module.name,
-									new Map(),
-									false,
-								);
-							}
-							throw err;
-						}
-					};
-				} else {
-					return {
-						// biome-ignore lint/style/noNonNullAssertion: the token is guaranteed to be set
-						provide: this.options.optionsInjectionToken!,
+	private constructInjectionTokenString(): string {
+		const moduleNameInSnakeCase = this.options
+			.moduleName!.trim()
+			.split(/(?=[A-Z])/)
+			.join("_")
+			.toUpperCase();
+		return `${moduleNameInSnakeCase}_MODULE_OPTIONS`;
+	}
+
+	private createConfigurableModuleCls<ModuleOptions>(): ZodConfigurableModuleCls<
+		ModuleOptions,
+		ModuleOptionsInput,
+		StaticMethodKey,
+		FactoryClassMethodKey
+	> {
+		const self = this;
+		const asyncMethodKey = this.staticMethodKey + ASYNC_METHOD_SUFFIX;
+
+		class InternalModuleClass {
+			static [self.staticMethodKey](
+				options: ModuleOptionsInput & ExtraModuleDefinitionOptions,
+			): DynamicModule {
+				const providers: Array<Provider> = [
+					{
+						provide: self.options.optionsInjectionToken!,
+						// NOTE: instead of useValue: this.omitExtras(options, self.extras),
 						useFactory: async () => {
-							const finalOptions = isObject(extraOptions)
-								? omit(extraOptions, keys(extras))
-								: extraOptions;
+							const finalOptions = this.omitExtras(options, self.extras);
 							try {
-								return await this.schema.parseAsync(finalOptions);
+								return await self.schema.parseAsync(finalOptions);
 							} catch (err) {
 								if (err instanceof ZodError) {
-									throw zodErrorToTypeError(
-										err,
-										this.schema,
-										definition.module.name,
-										new Map(),
-										false,
-									);
+									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
 								}
 								throw err;
 							}
 						},
-					};
+					},
+				];
+				if (self.options.alwaysTransient) {
+					providers.push({
+						provide: CONFIGURABLE_MODULE_ID,
+						useValue: randomStringGenerator(),
+					});
 				}
+				return self.transformModuleDefinition(
+					{
+						module: this,
+						providers,
+					},
+					{
+						...self.extras,
+						...options,
+					},
+				);
 			}
 
-			return provider;
-		});
+			static [asyncMethodKey](
+				options: ConfigurableModuleAsyncOptions<ModuleOptionsInput> & ExtraModuleDefinitionOptions,
+			): DynamicModule {
+				const providers = this.createAsyncProviders(options);
+				if (self.options.alwaysTransient) {
+					providers.push({
+						provide: CONFIGURABLE_MODULE_ID,
+						useValue: randomStringGenerator(),
+					});
+				}
+				return self.transformModuleDefinition(
+					{
+						module: this,
+						imports: options.imports || [],
+						providers,
+					},
+					{
+						...self.extras,
+						...options,
+					},
+				);
+			}
 
-		return definition;
+			private static omitExtras(
+				input: ModuleOptionsInput & ExtraModuleDefinitionOptions,
+				extras: ExtraModuleDefinitionOptions | undefined,
+			): ModuleOptionsInput {
+				if (!extras) {
+					return input;
+				}
+				const moduleOptions = {};
+				const extrasKeys = Object.keys(extras);
+
+				Object.keys(input as object)
+					.filter((key) => !extrasKeys.includes(key))
+					.forEach((key) => {
+						// @ts-expect-error: NestJS monkey types compat
+						moduleOptions[key] = input[key];
+					});
+				return moduleOptions as ModuleOptionsInput;
+			}
+
+			private static createAsyncProviders(
+				options: ConfigurableModuleAsyncOptions<ModuleOptionsInput>,
+			): Provider[] {
+				if (options.useExisting || options.useFactory) {
+					if (options.inject && options.provideInjectionTokensFrom) {
+						return [
+							this.createAsyncOptionsProvider(options),
+							...getInjectionProviders(options.provideInjectionTokensFrom, options.inject),
+						];
+					}
+					return [this.createAsyncOptionsProvider(options)];
+				}
+				return [
+					this.createAsyncOptionsProvider(options),
+					{
+						provide: options.useClass!,
+						useClass: options.useClass!,
+					},
+				];
+			}
+
+			private static createAsyncOptionsProvider(
+				options: ConfigurableModuleAsyncOptions<ModuleOptionsInput>,
+			): Provider {
+				if (options.useFactory) {
+					return {
+						provide: self.options.optionsInjectionToken!,
+						// NOTE: instead of useFactory: options.useFactory,
+						useFactory: async (...args) => {
+							const finalOptions = await options.useFactory!(...args);
+							try {
+								return await self.schema.parseAsync(finalOptions);
+							} catch (err) {
+								if (err instanceof ZodError) {
+									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
+								}
+								throw err;
+							}
+						},
+						inject: options.inject || [],
+					};
+				}
+				return {
+					provide: self.options.optionsInjectionToken!,
+					useFactory: async (
+						optionsFactory: ConfigurableModuleOptionsFactory<
+							ModuleOptionsInput,
+							FactoryClassMethodKey
+						>,
+						// NOTE: instead of => await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]()
+					) => {
+						const finalOptions =
+							await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]();
+						try {
+							return await self.schema.parseAsync(finalOptions);
+						} catch (err) {
+							if (err instanceof ZodError) {
+								throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
+							}
+							throw err;
+						}
+					},
+					inject: [options.useExisting || options.useClass!],
+				};
+			}
+		}
+		return InternalModuleClass as unknown as ZodConfigurableModuleCls<
+			ModuleOptions,
+			ModuleOptionsInput,
+			StaticMethodKey,
+			FactoryClassMethodKey
+		>;
 	}
-}
 
-type ZodConfigurableModuleCls<
-	// biome-ignore lint/correctness/noUnusedVariables: the type is needed for completeness interop with NestJS configurable class
-	ModuleOptions,
-	ModuleOptionsInput = unknown,
-	MethodKey extends string = typeof DEFAULT_METHOD_KEY,
-	FactoryClassMethodKey extends string = typeof DEFAULT_FACTORY_CLASS_METHOD_KEY,
-	ExtraModuleDefinitionOptions = object,
-> = {
-	// biome-ignore lint/suspicious/noExplicitAny: cast this to any for interop with NestJS configurable class
-	new (): any;
-} & Record<
-	`${MethodKey}`,
-	(options: ModuleOptionsInput & Partial<ExtraModuleDefinitionOptions>) => DynamicModule
-> &
-	Record<
-		`${MethodKey}Async`,
-		(
-			options: ConfigurableModuleAsyncOptions<ModuleOptionsInput, FactoryClassMethodKey> &
-				Partial<ExtraModuleDefinitionOptions>,
-		) => DynamicModule
-	>;
-
-interface ZodConfigurableModuleHost<
-	ModuleOptions = Record<string, unknown>,
-	ModuleOptionsInput = unknown,
-	MethodKey extends string = string,
-	FactoryClassMethodKey extends string = string,
-	ExtraModuleDefinitionOptions = object,
-> {
-	/**
-	 * Class that represents a blueprint/prototype for a configurable Nest module.
-	 * This class provides static methods for constructing dynamic modules. Their names
-	 * can be controlled through the "MethodKey" type argument.
-	 *
-	 * Your module class should inherit from this class to make the static methods available.
-	 *
-	 * @example
-	 * ```typescript
-	 * @Module({})
-	 * class IntegrationModule extends ConfigurableModuleCls {
-	 *  // ...
-	 * }
-	 * ```
-	 */
-	ConfigurableModuleClass: ZodConfigurableModuleCls<
-		ModuleOptions,
-		ModuleOptionsInput,
-		MethodKey,
-		FactoryClassMethodKey,
-		ExtraModuleDefinitionOptions
-	>;
-	/**
-	 * Module options provider token. Can be used to inject the "options object" to
-	 * providers registered within the host module.
-	 */
-	MODULE_OPTIONS_TOKEN: string | symbol;
-	/**
-	 * Can be used to auto-infer the compound "async module options" type.
-	 * Note: this property is not supposed to be used as a value.
-	 *
-	 * @example
-	 * ```typescript
-	 * @Module({})
-	 * class IntegrationModule extends ConfigurableModuleCls {
-	 *  static module = initializer(IntegrationModule);
-	 *
-	 * static registerAsync(options: typeof ASYNC_OPTIONS_TYPE): DynamicModule {
-	 *  return super.registerAsync(options);
-	 * }
-	 * ```
-	 */
-	OPTIONS_TYPE: ModuleOptions & Partial<ExtraModuleDefinitionOptions>;
-	/**
-	 * Can be used to auto-infer the compound "module options" type (options interface + extra module definition options).
-	 * Note: this property is not supposed to be used as a value.
-	 *
-	 * @example
-	 * ```typescript
-	 * @Module({})
-	 * class IntegrationModule extends ConfigurableModuleCls {
-	 *  static module = initializer(IntegrationModule);
-	 *
-	 * static register(options: typeof OPTIONS_TYPE): DynamicModule {
-	 *  return super.register(options);
-	 * }
-	 * ```
-	 */
-	ASYNC_OPTIONS_TYPE: ConfigurableModuleAsyncOptions<ModuleOptions, FactoryClassMethodKey> &
-		Partial<ExtraModuleDefinitionOptions>;
+	private createTypeProxy(
+		typeName:
+			| "OPTIONS_TYPE"
+			| "ASYNC_OPTIONS_TYPE"
+			| "OPTIONS_INPUT_TYPE"
+			| "ASYNC_OPTIONS_INPUT_TYPE"
+			| "OptionsFactoryInterface",
+	) {
+		const proxy = new Proxy(
+			{},
+			{
+				get: () => {
+					throw new Error(`"${typeName}" is not supposed to be used as a value.`);
+				},
+			},
+		);
+		// biome-ignore lint/suspicious/noExplicitAny: NestJS monkey types compat
+		return proxy as any;
+	}
 }

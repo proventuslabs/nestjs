@@ -306,12 +306,19 @@ Builder class for creating configurable modules with Zod validation.
 ```typescript
 class ZodConfigurableModuleBuilder<
   ModuleOptions,
-  ModuleOptionsInput = unknown,
+  ModuleOptionsInput,
   StaticMethodKey extends string = string,
   FactoryClassMethodKey extends string = string,
   ExtraModuleDefinitionOptions = object
 >
 ```
+
+```typescript
+export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN, OPTIONS_TYPE, OPTIONS_INPUT_TYPE } =
+  new ZodConfigurableModuleBuilder(z.object({ timeout: z.number().default(100) }))
+```
+
+Offers identical API to the standard NestJS `ConfigurableModuleBuilder`, consult [their docs](https://docs.nestjs.com/fundamentals/dynamic-modules#configurable-module-builder) for usage.
 
 ## Error Handling
 
