@@ -40,8 +40,8 @@ export type ZodConfigurableModuleCls<
  * @publicApi
  */
 export interface ZodConfigurableModuleHost<
-	ModuleOptions = Record<string, unknown>,
-	ModuleOptionsInput = Record<string, unknown>,
+	ModuleOptions,
+	ModuleOptionsInput,
 	MethodKey extends string = string,
 	FactoryClassMethodKey extends string = string,
 	// biome-ignore lint/complexity/noBannedTypes: NestJS monkey types compat
