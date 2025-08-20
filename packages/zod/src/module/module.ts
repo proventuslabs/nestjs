@@ -199,7 +199,9 @@ export class ZodConfigurableModuleBuilder<
 								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
 								throw err instanceof $ZodError
-									? typifyError(self.schema, err, "options", this.name)
+									? new TypeError(typifyError(self.schema, err, "options", this.name), {
+											cause: err,
+										})
 									: err;
 							}
 						},
@@ -299,7 +301,9 @@ export class ZodConfigurableModuleBuilder<
 								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
 								throw err instanceof $ZodError
-									? typifyError(self.schema, err, "options", this.name)
+									? new TypeError(typifyError(self.schema, err, "options", this.name), {
+											cause: err,
+										})
 									: err;
 							}
 						},
@@ -321,7 +325,7 @@ export class ZodConfigurableModuleBuilder<
 							return await parseAsync(self.schema, finalOptions);
 						} catch (err) {
 							throw err instanceof $ZodError
-								? typifyError(self.schema, err, "options", this.name)
+								? new TypeError(typifyError(self.schema, err, "options", this.name), { cause: err })
 								: err;
 						}
 					},

@@ -201,10 +201,11 @@ export const typifyError = <S extends $ZodType>(
 	context: "options" | "config",
 	namespace: string,
 	envKeys: Map<string, string> = new Map(),
-): TypeError => {
+	jsonSchemaOptions: Parameters<typeof toJSONSchema>[1] = { unrepresentable: "any" },
+): string => {
 	// NOTE: shamelessy copied from `prettifyError`
 	const lines: string[] = [];
-	const jsonSchema = toJSONSchema(schema, { unrepresentable: "any" });
+	const jsonSchema = toJSONSchema(schema, jsonSchemaOptions);
 
 	// sort by path length
 	const issues = [...error.issues].sort((a, b) => (a.path ?? []).length - (b.path ?? []).length);
@@ -227,7 +228,5 @@ export const typifyError = <S extends $ZodType>(
 		}
 	}
 
-	return new TypeError(`Invalid ${context} for "${namespace}":\n${lines.join("\n")}`, {
-		cause: error,
-	});
+	return `Invalid ${context} for "${namespace}":\n${lines.join("\n")}`;
 };

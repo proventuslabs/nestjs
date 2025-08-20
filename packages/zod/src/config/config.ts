@@ -90,7 +90,10 @@ export function registerConfig<
 			merge({ [namespace]: {} }, decodedConfig, decodedEnv),
 		);
 		if (!parsedConfig.success)
-			throw typifyError(namespacedSchema, parsedConfig.error, "config", namespace, envKeys);
+			throw new TypeError(
+				typifyError(namespacedSchema, parsedConfig.error, "config", namespace, envKeys),
+				{ cause: parsedConfig.error },
+			);
 		const config = parsedConfig.data[namespace];
 
 		return config;
