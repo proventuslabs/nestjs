@@ -6,6 +6,7 @@ import { Controller, Logger, Module, Post, UseFilters, UseInterceptors } from "@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import {
+	associateFields,
 	MultipartExceptionFilter,
 	type MultipartField,
 	MultipartFields,
@@ -15,7 +16,7 @@ import {
 	MultipartModule,
 } from "@proventuslabs/nestjs-multipart-form";
 
-import { from, map, merge, mergeMap, type Observable, toArray } from "rxjs";
+import { from, map, merge, mergeMap, type Observable, tap, toArray } from "rxjs";
 
 @Controller("users")
 @UseFilters(MultipartExceptionFilter)
@@ -25,10 +26,12 @@ export class UsersController {
 	@Post("avatar")
 	@UseInterceptors(MultipartInterceptor({ limits: {} }))
 	uploadAvatar(
-		@MultipartFiles(["file", ["file3", false]]) files$: Observable<MultipartFileStream>,
-		@MultipartFields(["name", ["meta", false]]) fields$: Observable<MultipartField>,
+		@MultipartFiles("file") file$: Observable<MultipartFileStream>,
+		@MultipartFiles("file2") file2$: Observable<MultipartFileStream>,
+		@MultipartFields(["name", ["meta[]", false]]) fieldsFiltered$: Observable<MultipartField>,
+		@MultipartFields() fieldsAll$: Observable<MultipartField>,
 	) {
-		const fileProcessing$ = files$.pipe(
+		const fileProcessing$ = file$.pipe(
 			mergeMap((file) =>
 				from(pipeline(file, buffer)).pipe(
 					map((data) => {
@@ -39,15 +42,33 @@ export class UsersController {
 				),
 			),
 		);
-		const fieldsProcessing$ = fields$.pipe(
-			map((field) => ({
-				type: "field",
-				name: field.name,
-				value: field.value,
-			})),
+		const file2Processing$ = file2$.pipe(
+			mergeMap((file) =>
+				from(pipeline(file, buffer)).pipe(
+					map((data) => {
+						this.logger.debug(`computing md5 for ${file.fieldname}`);
+						const md5 = createHash("md5").update(data).digest("hex");
+						return { fieldname: file.fieldname, md5 };
+					}),
+				),
+			),
 		);
 
-		return merge(fileProcessing$, fieldsProcessing$).pipe(toArray());
+		const fieldsFilteredProcessing$ = fieldsFiltered$.pipe(
+			tap((field) => this.logger.debug(`Fields filtered: ${field.name}`)),
+			associateFields(),
+		);
+		const fieldsAllProcessing$ = fieldsAll$.pipe(
+			tap((field) => this.logger.debug(`All fields: ${field.name}`)),
+			associateFields(),
+		);
+
+		return merge(
+			fileProcessing$,
+			file2Processing$,
+			fieldsFilteredProcessing$,
+			fieldsAllProcessing$,
+		).pipe(toArray());
 	}
 }
 

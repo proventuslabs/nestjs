@@ -54,13 +54,13 @@ function parseAssociations(
 
 /**
  * RxJS operator that enriches multipart fields with associative syntax parsing.
- * 
- * Transforms fields with associative syntax (e.g., "user[name]", "data[items][0]") 
+ *
+ * Transforms fields with associative syntax (e.g., "user[name]", "data[items][0]")
  * by adding parsed basename, associations array, and isAssociative flag.
  * Fields without associative syntax pass through unchanged.
  *
  * @returns RxJS operator function that transforms MultipartField observables
- * 
+ *
  * @example
  * fields$.pipe(
  *   associateFields()
