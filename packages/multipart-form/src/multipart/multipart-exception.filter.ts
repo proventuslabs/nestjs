@@ -13,6 +13,8 @@ import type { Response } from "express";
 import {
 	FieldsLimitError,
 	FilesLimitError,
+	MissingFieldsError,
+	MissingFilesError,
 	MultipartError,
 	PartsLimitError,
 	TruncatedFieldError,
@@ -25,7 +27,7 @@ import {
  *
  * Mapping:
  * - PartsLimitError, FilesLimitError, FieldsLimitError → PayloadTooLargeException (HTTP 413)
- * - TruncatedFileError, TruncatedFieldError → BadRequestException (HTTP 400)
+ * - TruncatedFileError, TruncatedFieldError, MissingFilesError, MissingFieldsError → BadRequestException (HTTP 400)
  * - Other MultipartError instances → InternalServerErrorException (HTTP 500)
  *
  * The original error is preserved using the `cause` property.
@@ -47,7 +49,9 @@ export class MultipartExceptionFilter implements ExceptionFilter {
 			httpException = new PayloadTooLargeException(exception.message, { cause: exception });
 		} else if (
 			exception instanceof TruncatedFileError ||
-			exception instanceof TruncatedFieldError
+			exception instanceof TruncatedFieldError ||
+			exception instanceof MissingFilesError ||
+			exception instanceof MissingFieldsError
 		) {
 			httpException = new BadRequestException(exception.message, { cause: exception });
 		} else {
