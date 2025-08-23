@@ -26,7 +26,7 @@ import {
  * Mapping:
  * - PartsLimitError, FilesLimitError, FieldsLimitError → PayloadTooLargeException (HTTP 413)
  * - TruncatedFileError, TruncatedFieldError → BadRequestException (HTTP 400)
- * - Other MultipartError instances → BadRequestException (HTTP 400)
+ * - Other MultipartError instances → InternalServerErrorException (HTTP 500)
  *
  * The original error is preserved using the `cause` property.
  */

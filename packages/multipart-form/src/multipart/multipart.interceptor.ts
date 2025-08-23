@@ -48,28 +48,28 @@ export function MultipartInterceptor(localOptions?: MultipartOptions) {
 
 			const req = ctx.switchToHttp().getRequest<Request>();
 
-			const done$ = new Subject<never>();
+			const options = localOptions ?? this.globalOptions;
 
-			const parser$ = parseMultipartData(
-				req,
-				req.headers,
-				done$,
-				localOptions ?? this.globalOptions,
-			).pipe(
+			// this subject is used to signal downstream when execution has been completed
+			const upstreamExecutionDone$ = new Subject<never>();
+
+			const parser$ = parseMultipartData(req, req.headers, upstreamExecutionDone$, options).pipe(
 				tap(({ files, fields }) => {
-					req.files = files;
-					req.fields = fields;
+					req._files$ = files;
+					req._fields$ = fields;
 				}),
 			);
 
+			// we cleanup after consumers in case incoming streams are left unconsumed
 			const cleanup = () => {
-				done$.complete();
+				upstreamExecutionDone$.complete();
 
-				if (!req.files) return Promise.resolve();
+				if (!req._files$) return Promise.resolve();
 
-				return req.files
+				return req._files$
 					.forEach((file) => {
-						if (!file.readableEnded) file.resume();
+						if (file.readable) file.resume();
+						// if (file.listenerCount('readable') > 0) // warning?
 					})
 					.catch(() => {});
 			};

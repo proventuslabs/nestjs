@@ -78,3 +78,29 @@ export class TruncatedFieldError extends MultipartError {
 		super(`Field "${fieldname}" was truncated during upload`, options);
 	}
 }
+
+/**
+ * Thrown when files are missing from the request.
+ */
+export class MissingFilesError extends MultipartError {
+	/**
+	 * @param fieldnames - The missing form file field name
+	 * @param options - Optional error options
+	 */
+	constructor(fieldnames: string[], options?: { cause?: unknown }) {
+		super(`Missing files: ${fieldnames.join(", ")}`, options);
+	}
+}
+
+/**
+ * Thrown when fields are missing from the request.
+ */
+export class MissingFieldsError extends MultipartError {
+	/**
+	 * @param fieldnames - The missing form file field name
+	 * @param options - Optional error options
+	 */
+	constructor(fieldnames: string[], options?: { cause?: unknown }) {
+		super(`Missing fields: ${fieldnames.join(", ")}`, options);
+	}
+}

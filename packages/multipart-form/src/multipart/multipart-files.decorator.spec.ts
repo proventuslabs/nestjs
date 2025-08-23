@@ -3,42 +3,89 @@ import { Readable } from "node:stream";
 import type { ExecutionContext } from "@nestjs/common";
 
 import { createMock } from "@golevelup/ts-jest";
+import { type Observable, of } from "rxjs";
+import { TestScheduler } from "rxjs/testing";
 
+import { MissingFilesError } from "./multipart.errors";
 import type { MultipartFileStream } from "./multipart.types";
-import { wrapReadableIntoMultipartFileUpload } from "./multipart.utils";
+import { wrapReadableIntoMultipartFileStream } from "./multipart.utils";
 import { multipartFilesFactory } from "./multipart-files.decorator";
 
-describe("MultipartFiles (Decorator)", () => {
-	const mockFile1 = wrapReadableIntoMultipartFileUpload(
-		Readable.from([]),
-		"document",
-		"doc.pdf",
-		"7bit",
-		"application/pdf",
-	);
+describe("multipartFilesFactory", () => {
+	let scheduler: TestScheduler;
 
-	const mockFile2 = wrapReadableIntoMultipartFileUpload(
-		Readable.from([]),
-		"image",
-		"pic.jpg",
-		"7bit",
-		"image/jpeg",
-	);
+	beforeEach(() => {
+		scheduler = new TestScheduler((actual, expected) => {
+			expect(actual).toEqual(expected);
+		});
+	});
 
-	const createMockContext = (files: MultipartFileStream[] = [], type: "http" | "ws" = "http") =>
+	const mockFile = (field: string): MultipartFileStream =>
+		wrapReadableIntoMultipartFileStream(
+			Readable.from([]),
+			field,
+			`${field}.dat`,
+			"7bit",
+			"application/octet-stream",
+		);
+
+	const createContext = (files$: Observable<MultipartFileStream>, type: "http" | "ws" = "http") =>
 		createMock<ExecutionContext>({
 			getType: () => type,
 			switchToHttp: () => ({
 				getRequest: () => ({
-					files,
+					_files$: files$,
 				}),
 			}),
 		});
 
-	it("should return all files when no options are specified and files are present", () => {
-		const ctx = createMockContext([mockFile1, mockFile2]);
-		const files = multipartFilesFactory(undefined, ctx);
+	it("should return EMPTY if context type is not http", () => {
+		scheduler.run(({ expectObservable }) => {
+			const ctx = createContext(of(mockFile("file")), "ws");
+			const result$ = multipartFilesFactory(undefined, ctx);
+			expectObservable(result$).toBe("|"); // completes immediately
+		});
+	});
 
-		expect(files).toEqual([mockFile1, mockFile2]);
+	it("should pass through all files when options is undefined", () => {
+		scheduler.run(({ cold, expectObservable }) => {
+			const f1 = mockFile("a");
+			const f2 = mockFile("b");
+			const files$ = cold("a-b-|", { a: f1, b: f2 });
+			const ctx = createContext(files$);
+			const result$ = multipartFilesFactory(undefined, ctx);
+			expectObservable(result$).toBe("a-b-|", { a: f1, b: f2 });
+		});
+	});
+
+	it("should filter and emit only required files", () => {
+		scheduler.run(({ cold, expectObservable }) => {
+			const doc = mockFile("document");
+			const img = mockFile("image");
+			const files$ = cold("a-b-|", { a: doc, b: img });
+			const ctx = createContext(files$);
+			const result$ = multipartFilesFactory("document", ctx);
+			expectObservable(result$).toBe("a---|", { a: doc });
+		});
+	});
+
+	it("should complete with error if required file is missing", () => {
+		scheduler.run(({ cold, expectObservable }) => {
+			const img = mockFile("image");
+			const files$ = cold("a|", { a: img });
+			const ctx = createContext(files$);
+			const result$ = multipartFilesFactory("document", ctx);
+			expectObservable(result$).toBe("-#", undefined, new MissingFilesError(["document"]));
+		});
+	});
+
+	it("should accept optional fields without error", () => {
+		scheduler.run(({ cold, expectObservable }) => {
+			const img = mockFile("avatar");
+			const files$ = cold("a-|", { a: img });
+			const ctx = createContext(files$);
+			const result$ = multipartFilesFactory([["avatar", false]], ctx);
+			expectObservable(result$).toBe("a-|", { a: img });
+		});
 	});
 });

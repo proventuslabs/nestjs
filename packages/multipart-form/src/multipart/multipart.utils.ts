@@ -13,7 +13,7 @@ import type { MultipartFileStream } from "./multipart.types";
  * @param mimetype The MIME type of the file.
  * @returns The wrapped stream as a `MultipartFile` with readonly metadata properties.
  */
-export function wrapReadableIntoMultipartFileUpload(
+export function wrapReadableIntoMultipartFileStream(
 	file: Readable,
 	fieldname: string,
 	filename: string,

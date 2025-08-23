@@ -1,15 +1,32 @@
 # @proventuslabs/nestjs-multipart-form
 
-A lightweight and efficient NestJS package for handling multipart form data and file uploads with streaming support and type safety.
+A lightweight and efficient NestJS package for handling multipart form data and file uploads with RxJS streaming support and type safety.
 
 ## 🚀 Features
 
-- 📁 **Streaming File Uploads**: Handle large files efficiently with Node.js streams
-- 🎯 **Type-Safe Decorators**: Built-in decorators for single and multiple file uploads
+- 🔄 **Express Integration**: Built for Express.js applications
+- 📁 **RxJS Streaming**: Handle files and fields efficiently with RxJS Observables and Node.js streams
+- 🎯 **Type-Safe Decorators**: Built-in decorators with validation and pattern matching support
 - 🔧 **Flexible Configuration**: Customizable Busboy configuration options
-- 🛡️ **Validation Support**: Built-in validation for required files and fields
-- ⚡ **High Performance**: Lightweight implementation with minimal overhead (busboy)
-- 🔄 **Express Integration**: Seamless integration with Express.js applications
+- 🛡️ **Validation Support**: Required/optional fields with pattern matching (e.g., `^user_` for fields starting with "user_")
+- ⚡ **High Performance**: Lightweight implementation with minimal overhead
+- 🚨 **Comprehensive Error Handling**: Custom exception filter with proper HTTP status codes
+
+## 🔄 Key Difference: Streaming vs Traditional Parsing
+
+Unlike traditional multipart form handling where the entire request is parsed **before** your controller handler is called, this package processes the multipart data **concurrently** with your controller execution using RxJS streams.
+
+### Traditional Approach
+```
+Request → Parse Entire Multipart Data → Controller Handler Called → Process Files
+```
+
+### RxJS Streaming Approach
+```
+Request → Start Parsing → Controller Handler Called → Process Files as Streams
+                ↓
+            Files arrive as they're parsed
+```
 
 ## 📦 Installation
 
@@ -19,87 +36,79 @@ npm install @proventuslabs/nestjs-multipart-form
 
 ## 🎯 Quick Start
 
-### 1. Basic File Upload
+### 1. Basic Setup
 
 ```typescript
-import { Controller, Post, UseInterceptors } from '@nestjs/common';
-import { 
-  MultipartFile, 
-  MultipartInterceptor,
-  type MultipartFileUpload 
-} from '@proventuslabs/nestjs-multipart-form';
-
-@Controller('upload')
-export class UploadController {
-  @Post('file')
-  @UseInterceptors(MultipartInterceptor())
-  async uploadFile(@MultipartFile('file') file: MultipartFileUpload) {
-    // Handle the uploaded file
-    console.log('Filename:', file.filename);
-    console.log('MIME type:', file.mimetype);
-    
-    // Process the file stream
-    const data = await this.processFile(file);
-    
-    return { message: 'File uploaded successfully', data };
-  }
-}
-```
-
-### 2. Multiple File Upload
-
-```typescript
-import { Controller, Post, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UseFilters } from '@nestjs/common';
 import { 
   MultipartFiles, 
+  MultipartFields,
   MultipartInterceptor,
-  type MultipartFileUpload 
+  MultipartExceptionFilter,
+  type MultipartFileStream,
+  type MultipartField
 } from '@proventuslabs/nestjs-multipart-form';
+import { Observable } from 'rxjs';
+import { map, toArray, mergeMap } from 'rxjs/operators';
+import { from, merge } from 'rxjs';
+import { buffer } from 'node:stream/consumers';
 
 @Controller('upload')
+@UseFilters(MultipartExceptionFilter)
 export class UploadController {
-  @Post('files')
+  @Post('avatar')
   @UseInterceptors(MultipartInterceptor())
-  async uploadFiles(@MultipartFiles(['image', 'document']) files: MultipartFileUpload[]) {
-    // Handle multiple files
-    const results = await Promise.all(
-      files.map(file => this.processFile(file))
+  async uploadAvatar(
+    @MultipartFiles(['file']) files$: Observable<MultipartFileStream>,
+    @MultipartFields(['name']) fields$: Observable<MultipartField>
+  ) {
+    const fileProcessing$ = files$.pipe(
+      mergeMap(file => 
+        from(buffer(file)).pipe(
+          map(data => ({ 
+            fieldname: file.fieldname, 
+            filename: file.filename,
+            size: data.length 
+          }))
+        )
+      )
     );
     
-    return { 
-      message: 'Files uploaded successfully', 
-      count: files.length,
-      results 
-    };
+    const fieldProcessing$ = fields$.pipe(
+      map(field => ({ name: field.name, value: field.value }))
+    );
+
+    return merge(fileProcessing$, fieldProcessing$).pipe(toArray());
   }
 }
 ```
 
-### 3. Optional File Upload
+### 2. Pattern Matching for Fields
 
 ```typescript
-import { Controller, Post, UseInterceptors } from '@nestjs/common';
-import { 
-  MultipartFile, 
-  MultipartInterceptor,
-  type MultipartFileUpload 
-} from '@proventuslabs/nestjs-multipart-form';
+@Post('profile')
+@UseInterceptors(MultipartInterceptor())
+async uploadProfile(
+  @MultipartFields(['name', '^user_', ['metadata', false]]) fields$: Observable<MultipartField>
+) {
+  // Matches:
+  // - 'name' exactly (required)
+  // - any field starting with 'user_' (required) 
+  // - 'metadata' exactly (optional)
+  return fields$.pipe(toArray());
+}
+```
 
-@Controller('upload')
-export class UploadController {
-  @Post('optional')
-  @UseInterceptors(MultipartInterceptor())
-  async uploadOptional(
-    @MultipartFile({ fieldname: 'avatar', required: false }) 
-    avatar?: MultipartFileUpload
-  ) {
-    if (avatar) {
-      // Process the avatar file
-      await this.processAvatar(avatar);
-    }
-    
-    return { message: 'Upload completed' };
-  }
+### 3. Optional/Required File Validation
+
+```typescript
+@Post('document')
+@UseInterceptors(MultipartInterceptor())
+async uploadDocument(
+  @MultipartFiles([['document'], ['thumbnail', false]]) files$: Observable<MultipartFileStream>
+) {
+  // 'document' is required, 'thumbnail' is optional
+  return files$.pipe(toArray());
 }
 ```
 
@@ -107,139 +116,114 @@ export class UploadController {
 
 ### MultipartInterceptor
 
-The main interceptor that processes multipart form data.
-
 ```typescript
-@UseInterceptors(MultipartInterceptor(config?: BusboyConfig))
+@UseInterceptors(MultipartInterceptor(options?: MultipartOptions))
 ```
 
-**Configuration Options:**
-- `limits` - File size and field limits
-- `preservePath` - Whether to preserve file paths
-- `fileHwm` - File stream high water mark
-- `defCharset` - Default character set
-
-### MultipartFile Decorator
-
-Extract a single file from the request.
-
-```typescript
-@MultipartFile(fieldname: string)
-@MultipartFile({ fieldname: string, required?: boolean })
-```
-
-**Parameters:**
-- `fieldname` - The form field name containing the file
-- `required` - Whether the file is required (default: true)
+**Options:**
+- `limits` - File size and field limits (from Busboy)
+- `preservePath` - Whether to preserve file paths 
+- `bubbleErrors` - Bubble errors after controller ends
 
 ### MultipartFiles Decorator
 
-Extract multiple files from the request.
-
 ```typescript
 @MultipartFiles() // All files
-@MultipartFiles(fieldname: string) // Files with specific fieldname
-@MultipartFiles(fieldnames: string[]) // Files with specific fieldnames
-@MultipartFiles({ fieldnames?: string[], required?: boolean })
+@MultipartFiles('fieldname') // Single required field
+@MultipartFiles(['field1', 'field2']) // Multiple required fields
+@MultipartFiles([['field1'], ['field2', false]]) // Mixed required/optional
 ```
 
-**Parameters:**
-- `fieldnames` - Array of field names to filter files
-- `required` - Whether files are required (default: true)
+Returns: `Observable<MultipartFileStream>`
 
-### MultipartFileUpload
-
-The file upload Readble stream with the following properties:
+### MultipartFields Decorator
 
 ```typescript
-interface MultipartFileUpload extends Readable {
-  fieldname: string;    // Form field name
-  filename: string;     // Original filename
-  encoding: string;     // File encoding
-  mimetype: string;     // MIME type
+@MultipartFields() // All fields
+@MultipartFields('name') // Single required field
+@MultipartFields(['name', '^user_']) // Pattern matching support
+@MultipartFields([['name'], ['meta', false]]) // Mixed required/optional
+```
+
+Returns: `Observable<MultipartField>`
+
+**Pattern Matching:**
+- `"fieldname"` - Exact match
+- `"^prefix_"` - Fields starting with "prefix_"
+
+## 🔄 RxJS Operators
+
+The package provides specialized RxJS operators to transform multipart field data:
+
+### associateFields()
+
+Parses field names with associative syntax (e.g., `user[name]`, `data[items][0]`) and enriches the field objects with parsed information.
+
+```typescript
+import { associateFields } from '@proventuslabs/nestjs-multipart-form';
+
+@Post('form')
+@UseInterceptors(MultipartInterceptor())
+async handleForm(
+  @MultipartFields() fields$: Observable<MultipartField>
+) {
+  return fields$.pipe(
+    associateFields(),
+    map(field => {
+      if (field.isAssociative) {
+        // For field name "user[name]=John":
+        console.log(field.name);          // "user[name]"
+        console.log(field.value);         // "John"  
+        console.log(field.basename);      // "user"
+        console.log(field.associations);  // ["name"]
+        console.log(field.isAssociative); // true
+      }
+      return field;
+    }),
+    toArray()
+  );
 }
 ```
 
-## 📝 Examples
+**Supported Syntax:**
+- `field[key]` → basename: `field`, associations: `["key"]`
+- `field[key1][key2]` → basename: `field`, associations: `["key1", "key2"]`
+- `field[0][name]` → basename: `field`, associations: `["0", "name"]`
+- `[]` → basename: `<empty>`, associations: `[""]`
 
-### Complete Example with File Processing
+## 🚨 Error Handling
+
+Built-in error types:
+- **MissingFilesError** - Required files missing
+- **MissingFieldsError** - Required fields missing  
+- **FilesLimitError**, **FieldsLimitError**, **PartsLimitError** - Limit exceeded
+- **TruncatedFileError**, **TruncatedFieldError** - Data truncated
 
 ```typescript
-import { buffer } from 'node:stream/consumers';
-import { pipeline } from 'node:stream/promises';
-import { Controller, Logger, Post, UseInterceptors } from '@nestjs/common';
-import { 
-  MultipartFile, 
-  MultipartInterceptor,
-  type MultipartFileUpload 
-} from '@proventuslabs/nestjs-multipart-form';
+import { MultipartExceptionFilter } from '@proventuslabs/nestjs-multipart-form';
 
-@Controller('users')
-export class UsersController {
-  private readonly logger = new Logger(UsersController.name);
-
-  @Post('avatar')
-  @UseInterceptors(MultipartInterceptor())
-  async uploadAvatar(@MultipartFile('file') file: MultipartFileUpload) {
-    this.logger.debug(`Uploading file: ${file.filename}`);
-    
-    // Get file buffer
-    const data = await pipeline(file, buffer);
-    
-    // Process the file data
-    const result = await this.processImage(data);
-    
-    return {
-      message: 'Avatar uploaded successfully',
-      filename: file.filename,
-      size: data.length,
-      result
-    };
-  }
-
-  private async processImage(buffer: Buffer) {
-    // Your image processing logic here
-    return { processed: true };
-  }
-}
+@UseFilters(MultipartExceptionFilter)
+export class UploadController {}
 ```
 
-### Global Interceptor Setup
+## 📝 Module Setup
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { MultipartInterceptor } from '@proventuslabs/nestjs-multipart-form';
+import { MultipartModule } from '@proventuslabs/nestjs-multipart-form';
 
 @Module({
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: MultipartInterceptor({
-        limits: {
-          fileSize: 10 * 1024 * 1024, // 10MB
-          files: 5
-        }
-      })
-    }
+  imports: [
+    MultipartModule.register({
+      limits: { 
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 5
+      }
+    })
   ]
 })
 export class AppModule {}
 ```
-
-## 🔒 Validation
-
-The package includes built-in validation:
-
-- **Required Files**: Throws `BadRequestException` if required files are missing
-- **Field Validation**: Validates specific field names exist
-- **Type Safety**: Full TypeScript support with proper typing
-
-## 🚀 Performance
-
-- **Streaming**: Files are processed as streams, not loaded entirely into memory
-- **Efficient**: Uses Busboy for fast multipart parsing
-- **Lightweight**: Minimal overhead and dependencies
 
 ## 🤝 Contributing
 
@@ -253,4 +237,5 @@ This project is licensed under the MIT License - see the [LICENSE](../../LICENSE
 
 - [ProventusLabs](https://proventuslabs.com)
 - [NestJS Documentation](https://nestjs.com)
+- [RxJS Documentation](https://rxjs.dev)
 - [Busboy Documentation](https://github.com/mscdex/busboy)

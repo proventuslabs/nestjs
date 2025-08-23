@@ -6,7 +6,7 @@ export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN, ASYNC_OPTIONS_TYPE
 	new ConfigurableModuleBuilder<MultipartOptions>()
 		.setExtras(
 			{
-				isGlobal: true,
+				isGlobal: false,
 			},
 			(definition, extras) => ({
 				...definition,
