@@ -3,9 +3,9 @@ import type { Readable } from "node:stream";
 import type { MultipartFileStream } from "./multipart.types";
 
 /**
+ * @internal
  * Wraps a Node.js Readable stream into a MultipartFileStream object with metadata.
  *
- * @internal
  * @param file The readable stream representing the file
  * @param fieldname The field name from the multipart form
  * @param filename The original filename of the uploaded file

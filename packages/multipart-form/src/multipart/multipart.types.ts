@@ -9,27 +9,40 @@ import type { Observable } from "rxjs";
 export type { BusboyConfig, Limits } from "busboy";
 
 /**
+ * Re-export types from `qs` for convenience.
+ */
+import type * as Qs from "qs";
+export type { Qs };
+
+/**
  * Options for the multipart parser, derived from `BusboyConfig` without `headers`.
  */
 export interface MultipartOptions extends Omit<BusboyConfig, "headers"> {
-	/** True to bubble errors from the request _after_ the controller has ended */
+	/** True to bubble errors from the request _after_ the controller has ended. */
 	bubbleErrors?: boolean;
+
+	/**
+	 * False will disable auto draining of unread files.
+	 *
+	 * **WARNING**: you are responsible to consume all files streams or busboy will **deadlock**!
+	 */
+	autodrain?: boolean;
 }
 
 /**
  * Metadata about a file uploaded in a multipart request.
  */
 export interface MultipartFileData {
-	/** The form field name for this file */
+	/** The form field name for this file. */
 	fieldname: string;
 
-	/** The original filename of the uploaded file */
+	/** The original filename of the uploaded file. */
 	filename: string;
 
-	/** The MIME type, otherwise empty */
+	/** The MIME type, otherwise empty. */
 	mimetype: string;
 
-	/** The multipart-form encoding of the file */
+	/** The multipart-form encoding of the file. */
 	encoding: string;
 }
 
@@ -38,7 +51,7 @@ export interface MultipartFileData {
  * Extends `Readable` stream and includes file metadata.
  */
 export interface MultipartFileStream extends Readable, MultipartFileData {
-	/** Indicates if the file stream was truncated due to size limits (best checked at the end of the stream) */
+	/** Indicates if the file stream was truncated due to size limits (best checked at the end of the stream). */
 	truncated?: boolean;
 }
 
@@ -46,16 +59,16 @@ export interface MultipartFileStream extends Readable, MultipartFileData {
  * Base properties shared by all multipart fields.
  */
 interface MultipartFieldBase {
-	/** The full original name of the form field */
+	/** The full original name of the form field. */
 	name: string;
 
-	/** The value of the form field */
+	/** The value of the form field. */
 	value: string;
 
-	/** The MIME type, empty if not a file */
+	/** The MIME type, empty if not a file. */
 	mimetype: string;
 
-	/** The multipart-form encoding of the field */
+	/** The multipart-form encoding of the field. */
 	encoding: string;
 }
 
@@ -66,10 +79,10 @@ interface MultipartNonAssociativeField extends MultipartFieldBase {
 	/** Whether this field should be treated as associative. */
 	isAssociative?: false;
 
-	/** The base field name without associative syntax */
+	/** The base field name without associative syntax. */
 	basename?: string;
 
-	/** The associations if specified (e.g., field[0] or field[test]) */
+	/** The associations if specified (e.g., field[0] or field[test]). */
 	associations?: string[];
 }
 
@@ -80,10 +93,10 @@ interface MultipartAssociativeField extends MultipartFieldBase {
 	/** Whether this field should be treated as associative. */
 	isAssociative: true;
 
-	/** The base field name without associative syntax */
+	/** The base field name without associative syntax. */
 	basename: string;
 
-	/** The associations if specified (e.g., field[0] or field[test]) */
+	/** The associations if specified (e.g., field[0] or field[test]). */
 	associations: string[];
 }
 
@@ -97,10 +110,10 @@ export type MultipartField = MultipartNonAssociativeField | MultipartAssociative
  */
 declare module "http" {
 	interface IncomingMessage {
-		/** @internal Stream of uploaded files */
+		/** @internal Stream of uploaded files for internal subs. Use decorator instead `@MultipartFiles()`. */
 		_files$?: Observable<MultipartFileStream>;
 
-		/** @internal Stream of form fields */
+		/** @internal Stream of form fields for internal subs. Use decorator instead `@MultipartFields()`. */
 		_fields$?: Observable<MultipartField>;
 	}
 }

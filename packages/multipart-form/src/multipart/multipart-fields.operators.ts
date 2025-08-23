@@ -1,8 +1,10 @@
-import { map, type Observable } from "rxjs";
+import qs from "qs";
+import { map, type Observable, toArray } from "rxjs";
 
 import type { MultipartField } from "./multipart.types";
 
 /**
+ * @internal
  * Parses a field name to determine if it uses associative syntax.
  * Supports both single-level `field[key]` and nested `field[key1][key2]` syntax patterns.
  *
@@ -29,11 +31,11 @@ function parseAssociations(
 				buffer = "";
 				inBracket = true;
 			} else {
-				// Nested [ inside bracket → invalid
+				// Nested [ inside bracket → invalid.
 				return undefined;
 			}
 		} else if (char === "]") {
-			if (!inBracket) return undefined; // unmatched ]
+			if (!inBracket) return undefined; // Unmatched ].
 			associations.push(buffer);
 			buffer = "";
 			inBracket = false;
@@ -42,7 +44,7 @@ function parseAssociations(
 		}
 	}
 
-	if (inBracket) return undefined; // unclosed bracket
+	if (inBracket) return undefined; // Unclosed bracket.
 	if (!basename) basename = buffer;
 	if (associations.length === 0) return undefined;
 
@@ -90,6 +92,33 @@ export function associateFields() {
 
 				return v;
 			}),
+		);
+	};
+}
+
+/**
+ * RxJS operator that collects associatives multipart fields into arrays.
+ * Fields with array-like syntax (field[] or field[0]) are collected into arrays while
+ * fields with associative-like syntax (field[name]) are collected into objects.
+ * Uses `qs` under the hood.
+ *
+ * @example
+ * fields$.pipe(
+ *   associateFields(),
+ *   collectAssociatives()
+ * ).subscribe(fields => {
+ *   // For fields "name[first]=John" and "name[last]=Doe":
+ *   console.log(fields); // { "name": { "first": "John", "last": "Doe" } }
+ * });
+ */
+export function collectAssociatives(
+	options?: qs.IParseOptions<qs.BooleanOptional> & { decoder?: never | undefined },
+) {
+	return (source: Observable<MultipartField>): Observable<qs.ParsedQs> => {
+		return source.pipe(
+			map((v) => `${v.name}=${v.value}`),
+			toArray(),
+			map((q) => qs.parse(q.join("&"), options)),
 		);
 	};
 }

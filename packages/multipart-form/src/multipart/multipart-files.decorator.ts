@@ -32,7 +32,7 @@ export function multipartFilesFactory(
 			options.filter((v) => isArray(v) && v[1] === false).map((v) => (isString(v) ? v : v[0])),
 		);
 	} else {
-		// undefined - return all files without validation
+		// 'undefined' - return all files without validation.
 		return files$;
 	}
 
@@ -42,7 +42,7 @@ export function multipartFilesFactory(
 		const subscription = files$
 			.pipe(
 				tap((stream) => {
-					// auto-drain unwanted streams
+					// Auto-drain unwanted streams.
 					if (!all.has(stream.fieldname)) stream.resume();
 				}),
 				filter((stream) => all.has(stream.fieldname)),
@@ -56,7 +56,7 @@ export function multipartFilesFactory(
 				next: (stream) => subscriber.next(stream),
 				error: (err) => subscriber.error(err),
 				complete: () => {
-					// Check for missing REQUIRED files when upstream completes
+					// Check for missing REQUIRED files when upstream completes.
 					if (required.size > 0) {
 						subscriber.error(new MissingFilesError(Array.from(required)));
 					} else {
@@ -89,28 +89,28 @@ export function multipartFilesFactory(
  * async uploadFiles(
  *   ‍@MultipartFiles(['document', ['avatar', false]]) files: Observable<MultipartFileStream>
  * ) {
- *   // files will emit each valid file stream as it's processed
- *   // 'document' is required, 'avatar' is optional
+ *   // Files will emit each valid file stream as it's processed.
+ *   // 'document' is required, 'avatar' is optional.
  *   return files.pipe(
  *     map(file => file.fieldname),
  *     toArray()
  *   );
  * }
  *
- * // Single required file field
+ * // Single required file field:
  * ‍@Post('upload')
  * async uploadFile(
  *   ‍@MultipartFiles('file') files: Observable<MultipartFileStream>
  * ) {
- *   // Only 'file' field will be emitted
+ *   // Only 'file' field will be emitted.
  * }
  *
- * // All file fields without validation
+ * // All file fields without validation:
  * ‍@Post('upload')
  * async uploadFiles(
  *   ‍@MultipartFiles() files: Observable<MultipartFileStream>
  * ) {
- *   // All multipart file fields will be emitted
+ *   // All multipart file fields will be emitted.
  * }
  */
 export const MultipartFiles = createParamDecorator(multipartFilesFactory);

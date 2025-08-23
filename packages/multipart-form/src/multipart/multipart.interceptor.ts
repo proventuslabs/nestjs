@@ -8,8 +8,7 @@ import {
 } from "@nestjs/common";
 
 import type { Request } from "express";
-import { type Observable, Subject } from "rxjs";
-import { finalize, switchMap, tap } from "rxjs/operators";
+import { finalize, type Observable, Subject, switchMap, tap } from "rxjs";
 
 import { MODULE_OPTIONS_TOKEN } from "./multipart.module-definition";
 import { parseMultipartData } from "./multipart.parser";
@@ -54,7 +53,7 @@ export function MultipartInterceptor(localOptions?: MultipartOptions) {
 
 			const options = localOptions ?? this.globalOptions;
 
-			// this subject is used to signal downstream when execution has been completed
+			// This subject is used to signal downstream when execution has been completed.
 			const upstreamExecutionDone$ = new Subject<never>();
 
 			const parser$ = parseMultipartData(req, req.headers, upstreamExecutionDone$, options).pipe(
@@ -64,21 +63,24 @@ export function MultipartInterceptor(localOptions?: MultipartOptions) {
 				}),
 			);
 
-			// we cleanup after consumers in case incoming streams are left unconsumed
-			const cleanup = () => {
-				upstreamExecutionDone$.complete();
-
-				if (!req._files$) return Promise.resolve();
+			const drain = () => {
+				if (!req._files$ || options?.autodrain === false) return Promise.resolve();
 
 				return req._files$
 					.forEach((file) => {
 						if (file.readable) file.resume();
-						// if (file.listenerCount('readable') > 0) // warning?
+						// REVIEW: should we issue a warning if (file.listenerCount('readable') > 0)?
 					})
 					.catch(() => {});
 			};
 
-			return parser$.pipe(switchMap(() => next.handle().pipe(finalize(cleanup))));
+			const done = () => {
+				upstreamExecutionDone$.complete();
+			};
+
+			return parser$.pipe(
+				switchMap(() => next.handle().pipe(tap({ subscribe: drain }), finalize(done))),
+			);
 		}
 	}
 

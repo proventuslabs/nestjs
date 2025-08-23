@@ -67,7 +67,7 @@ export function multipartFieldsFactory(
 			.filter((v) => isArray(v) && v[1] === false)
 			.map((v) => (isString(v) ? v : v[0]));
 	} else {
-		// undefined - return all fields without validation
+		// 'undefined' - return all fields without validation.
 		return fields$;
 	}
 
@@ -79,11 +79,11 @@ export function multipartFieldsFactory(
 		const subscription = fields$
 			.pipe(
 				filter((field) => {
-					// Check if field matches any pattern
+					// Check if field matches any pattern.
 					return allPatterns.some((pattern) => matchesFieldPattern(field.name, pattern));
 				}),
 				tap((field) => {
-					// Track which required patterns have been matched
+					// Track which required patterns have been matched.
 					for (const pattern of requiredPatterns) {
 						if (matchesFieldPattern(field.name, pattern)) {
 							matchedRequiredPatterns.add(pattern);
@@ -95,7 +95,7 @@ export function multipartFieldsFactory(
 				next: (stream) => subscriber.next(stream),
 				error: (err) => subscriber.error(err),
 				complete: () => {
-					// Check for missing REQUIRED patterns when upstream completes
+					// Check for missing REQUIRED patterns when upstream completes.
 					const missingRequired = requiredPatterns.filter(
 						(pattern) => !matchedRequiredPatterns.has(pattern),
 					);
@@ -135,31 +135,31 @@ export function multipartFieldsFactory(
  * async uploadFile(
  *   ‍@MultipartFields(['file', ['description', false]]) fields: Observable<MultipartField>
  * ) {
- *   // fields will emit each valid field as it's processed
- *   // 'file' is required, 'description' is optional
+ *   // Fields will emit each valid field as it's processed.
+ *   // 'file' is required, 'description' is optional.
  *   return fields.pipe(
  *     map(field => field.name),
  *     toArray()
  *   );
  * }
  *
- * // Single required field
+ * // Single required field:
  * ‍@Post('upload')
  * async uploadFile(
  *   ‍@MultipartFields('file') fields: Observable<MultipartField>
  * ) {
- *   // Only 'file' field will be emitted
+ *   // Only 'file' field will be emitted.
  * }
  *
- * // All fields without validation
+ * // All fields without validation:
  * ‍@Post('upload')
  * async uploadFile(
  *   ‍@MultipartFields() fields: Observable<MultipartField>
  * ) {
- *   // All multipart fields will be emitted
+ *   // All multipart fields will be emitted.
  * }
  *
- * // Using "starts with" pattern matching
+ * // Using "starts with" pattern matching:
  * ‍@Post('upload')
  * async uploadFile(
  *   ‍@MultipartFields('^user_') fields: Observable<MultipartField>
@@ -167,14 +167,14 @@ export function multipartFieldsFactory(
  *   // Will emit fields like: user_name, user_email, user_avatar, etc.
  * }
  *
- * // Mixed exact and pattern matching
+ * // Mixed exact and pattern matching:
  * ‍@Post('upload')
  * async uploadFile(
  *   ‍@MultipartFields(['avatar', '^user_', ['metadata', false]]) fields: Observable<MultipartField>
  * ) {
- *   // 'avatar' is required (exact match)
- *   // any field starting with 'user_' is required
- *   // 'metadata' is optional (exact match)
+ *   // 'avatar' is required (exact match).
+ *   // Any field starting with 'user_' is required.
+ *   // 'metadata' is optional (exact match).
  * }
  */
 export const MultipartFields = createParamDecorator(multipartFieldsFactory);

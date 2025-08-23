@@ -2,7 +2,7 @@
 import { TestScheduler } from "rxjs/testing";
 
 import type { MultipartField } from "./multipart.types";
-import { associateFields } from "./multipart-fields.operators";
+import { associateFields, collectAssociatives } from "./multipart-fields.operators";
 
 describe("multipart-fields.operators", () => {
 	let testScheduler: TestScheduler;
@@ -272,6 +272,78 @@ describe("multipart-fields.operators", () => {
 				};
 
 				expectObservable(source$.pipe(associateFields())).toBe(expected, expectedValues);
+			});
+		});
+	});
+
+	describe("collectAssociatives", () => {
+		it("should collect fields into objects using qs parsing", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "user[name]", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "user[email]", value: "john@example.com", mimetype: "", encoding: "7bit" },
+					{ name: "tags[]", value: "javascript", mimetype: "", encoding: "7bit" },
+					{ name: "tags[]", value: "typescript", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(abcd|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+					d: fields[3]!,
+				});
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {
+						user: {
+							name: "john",
+							email: "john@example.com",
+						},
+						tags: ["javascript", "typescript"],
+					},
+				};
+
+				expectObservable(source$.pipe(collectAssociatives())).toBe(expected, expectedValues);
+			});
+		});
+
+		it("should handle empty fields", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const source$ = cold<MultipartField>("|");
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {},
+				};
+
+				expectObservable(source$.pipe(collectAssociatives())).toBe(expected, expectedValues);
+			});
+		});
+
+		it("should pass custom qs options", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "items[0]", value: "first", mimetype: "", encoding: "7bit" },
+					{ name: "items[1]", value: "second", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(ab|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+				});
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {
+						items: ["first", "second"],
+					},
+				};
+
+				expectObservable(source$.pipe(collectAssociatives({ arrayLimit: 10 }))).toBe(
+					expected,
+					expectedValues,
+				);
 			});
 		});
 	});
