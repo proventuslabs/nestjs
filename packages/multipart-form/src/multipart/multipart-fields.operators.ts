@@ -3,11 +3,11 @@ import { map, type Observable } from "rxjs";
 import type { MultipartField } from "./multipart.types";
 
 /**
- * Parses a field name to determine if it uses association-like syntax.
- * Supports both `field[base]` and  nested ones `field[abc][0]` syntax patterns.
+ * Parses a field name to determine if it uses associative syntax.
+ * Supports both single-level `field[key]` and nested `field[key1][key2]` syntax patterns.
  *
  * @param fieldname The field name to parse
- * @returns Parsed field name information or undefined if none
+ * @returns Parsed field name information with basename and associations, or undefined if not associative
  */
 function parseAssociations(
 	fieldname: string,
@@ -53,18 +53,24 @@ function parseAssociations(
 }
 
 /**
- * RxJS operator that maps associatives multipart fields.
+ * RxJS operator that enriches multipart fields with associative syntax parsing.
+ * 
+ * Transforms fields with associative syntax (e.g., "user[name]", "data[items][0]") 
+ * by adding parsed basename, associations array, and isAssociative flag.
+ * Fields without associative syntax pass through unchanged.
  *
+ * @returns RxJS operator function that transforms MultipartField observables
+ * 
  * @example
  * fields$.pipe(
  *   associateFields()
  * ).subscribe(field => {
- *   // syntax: name[first]=John
- *   // field.name: "name[first]"
- *   // field.value: "John"
- *   // field.isAssociative: true
- *   // field.basename: "name"
- *   // field.associations: ["first"]
+ *   // For field name "user[name]" with value "John":
+ *   console.log(field.name);          // "user[name]"
+ *   console.log(field.value);         // "John"
+ *   console.log(field.isAssociative); // true
+ *   console.log(field.basename);      // "user"
+ *   console.log(field.associations);  // ["name"]
  * });
  */
 export function associateFields() {

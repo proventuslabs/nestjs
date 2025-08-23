@@ -16,22 +16,26 @@ import { parseMultipartData } from "./multipart.parser";
 import type { MultipartOptions } from "./multipart.types";
 
 /**
- * Creates a NestJS HTTP interceptor that parses multipart/form-data requests.
+ * Creates a NestJS HTTP interceptor that parses multipart/form-data requests using RxJS streams.
  *
  * This interceptor:
- * - Uses `busboy` under the hood to process incoming files and fields from the request.
- * - Attaches `files` and `fields` streams to `req.files` and `req.fields` for downstream handlers.
- * - Ensures proper cleanup of file streams after the request is handled.
- * - Only applies to HTTP requests; other contexts are passed through unchanged.
+ * - Attaches `_files$` and `_fields$` observables to the request object for use with decorators
+ * - Ensures proper cleanup of file streams after the request is handled
+ * - Only applies to HTTP requests; other contexts are passed through unchanged
+ * - Supports both global (module-level) and local (interceptor-level) configuration
  *
- * @param localOptions Optional configuration for the multipart parser, matching `MultipartOptions`.
- * @returns A NestJS interceptor class that can be applied via `@UseInterceptors`.
+ * @param localOptions Optional configuration for the multipart parser that overrides global options
+ * @returns A NestJS interceptor class that can be applied via `@UseInterceptors`
  *
  * @example
  * ‍@Post('upload')
  * ‍@UseInterceptors(MultipartInterceptor({ limits: { files: 5 } }))
- * upload(‍@Req() req) {
- *   // Access uploaded files and fields via req.files and req.fields
+ * upload(
+ *   ‍@MultipartFiles() files$: Observable<MultipartFileStream>,
+ *   ‍@MultipartFields() fields$: Observable<MultipartField>
+ * ) {
+ *   // Process files and fields as RxJS streams
+ *   return merge(files$, fields$).pipe(toArray());
  * }
  */
 export function MultipartInterceptor(localOptions?: MultipartOptions) {
