@@ -1,12 +1,12 @@
 import type { Readable } from "node:stream";
 
-import type { BusboyConfig } from "busboy";
+import type { BusboyConfig } from "@fastify/busboy";
 import type { Observable } from "rxjs";
 
 /**
  * Re-export types from `busboy` for convenience.
  */
-export type { BusboyConfig, Limits } from "busboy";
+export type { BusboyConfig } from "@fastify/busboy";
 
 /**
  * Re-export types from `qs` for convenience.

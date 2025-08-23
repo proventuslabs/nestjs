@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { Readable } from "node:stream";
 
-import busboy from "busboy";
+import busboy, { type Busboy, type BusboyHeaders } from "@fastify/busboy";
 import { Observable, Subject } from "rxjs";
 
 import {
@@ -37,19 +37,12 @@ export function parseMultipartData(
 		files: Observable<MultipartFileStream>;
 		fields: Observable<MultipartField>;
 	}>((subscriber) => {
-		let bb: busboy.Busboy;
+		let bb: Busboy;
 		try {
-			bb = busboy({ ...options, headers });
+			bb = busboy({ ...options, headers: headers as unknown as BusboyHeaders });
 		} catch (err) {
 			return subscriber.error(new MultipartError("Failed to initialize Busboy", { cause: err }));
 		}
-
-		let shouldEmitErrors = true;
-		const upstreamExecutionDoneSub = upstreamExecutionDone$.subscribe({
-			complete: () => {
-				shouldEmitErrors = options?.bubbleErrors !== true;
-			},
-		});
 
 		const files = new Subject<MultipartFileStream>();
 		const fields = new Subject<MultipartField>();
@@ -57,6 +50,13 @@ export function parseMultipartData(
 		const partsLimit = options?.limits?.parts ?? Infinity;
 		const filesLimit = options?.limits?.files ?? Infinity;
 		const fieldsLimit = options?.limits?.fields ?? Infinity;
+
+		let shouldEmitErrors = true;
+		const upstreamExecutionDoneSub = upstreamExecutionDone$.subscribe({
+			complete: () => {
+				shouldEmitErrors = options?.bubbleErrors !== true;
+			},
+		});
 
 		const fail = (err: unknown) => {
 			if (shouldEmitErrors) {
@@ -68,13 +68,13 @@ export function parseMultipartData(
 
 		bb.on("partsLimit", () => fail(new PartsLimitError(partsLimit)));
 
-		bb.on("file", (fieldname, file, info) => {
+		bb.on("file", (fieldname, file, filename, transferEncoding, mimeType) => {
 			const incomingFile = wrapReadableIntoMultipartFileStream(
 				file,
 				fieldname,
-				info.filename,
-				info.encoding,
-				info.mimeType,
+				filename,
+				transferEncoding,
+				mimeType,
 			);
 			incomingFile.once("end", () => {
 				if (file.truncated) {
@@ -88,17 +88,20 @@ export function parseMultipartData(
 
 		bb.on("filesLimit", () => fail(new FilesLimitError(filesLimit)));
 
-		bb.on("field", (fieldname, value, info) => {
-			const incomingField: MultipartField = {
-				name: fieldname,
-				value,
-				mimetype: info.mimeType,
-				encoding: info.encoding,
-			};
+		bb.on(
+			"field",
+			(fieldname, value, fieldnameTruncated, valueTruncated, transferEncoding, mimeType) => {
+				const incomingField: MultipartField = {
+					name: fieldname,
+					value,
+					mimetype: mimeType,
+					encoding: transferEncoding,
+				};
 
-			if (info.nameTruncated || info.valueTruncated) fail(new TruncatedFieldError(fieldname));
-			else fields.next(incomingField);
-		});
+				if (fieldnameTruncated || valueTruncated) fail(new TruncatedFieldError(fieldname));
+				else fields.next(incomingField);
+			},
+		);
 
 		bb.on("fieldsLimit", () => fail(new FieldsLimitError(fieldsLimit)));
 
@@ -112,6 +115,9 @@ export function parseMultipartData(
 
 		// Allow subscriber to setup.
 		subscriber.next({ files: files.asObservable(), fields: fields.asObservable() });
+
+		// Add an error handler in case the upstream throws.
+		req.on("error", (err) => fail(new MultipartError("Request stream errored", { cause: err })));
 
 		// Start processing the request.
 		req.pipe(bb, { end: true });
