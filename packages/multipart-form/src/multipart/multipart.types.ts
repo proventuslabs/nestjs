@@ -18,13 +18,18 @@ export type { Qs };
  * Options for the multipart parser, derived from `BusboyConfig` without `headers`.
  */
 export interface MultipartOptions extends Omit<BusboyConfig, "headers"> {
-	/** True to bubble errors from the request _after_ the controller has ended. */
+	/**
+	 * True to bubble errors from the request _after_ the controller has ended.
+	 * @default false
+	 **/
 	bubbleErrors?: boolean;
 
 	/**
 	 * False will disable auto draining of unread files.
 	 *
 	 * **WARNING**: You are responsible to consume all files streams or busboy will **deadlock**!
+	 *
+	 * @default true
 	 */
 	autodrain?: boolean;
 }
