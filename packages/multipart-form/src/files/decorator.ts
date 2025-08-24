@@ -3,9 +3,9 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 import type { Request } from "express";
 import { EMPTY, type Observable } from "rxjs";
 
-import type { MultipartFileStream } from "./multipart.types";
-import { parseDecoratorOptions } from "./multipart.utils";
-import { filterFilesByFieldNames, validateRequiredFiles } from "./multipart-files.operators";
+import type { MultipartFileStream } from "../core/types";
+import { parseDecoratorOptions } from "../core/utils";
+import { filterFilesByFieldNames, validateRequiredFiles } from "./operators";
 
 export function multipartFilesFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,

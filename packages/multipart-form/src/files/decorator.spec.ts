@@ -6,10 +6,10 @@ import { createMock } from "@golevelup/ts-jest";
 import { type Observable, of } from "rxjs";
 import { TestScheduler } from "rxjs/testing";
 
-import { MissingFilesError } from "./multipart.errors";
-import type { MultipartFileStream } from "./multipart.types";
-import { wrapReadableIntoMultipartFileStream } from "./multipart.utils";
-import { multipartFilesFactory } from "./multipart-files.decorator";
+import { MissingFilesError } from "../core/errors";
+import type { MultipartFileStream } from "../core/types";
+import { wrapReadableIntoMultipartFileStream } from "../core/utils";
+import { multipartFilesFactory } from "./decorator";
 
 describe("multipartFilesFactory", () => {
 	let scheduler: TestScheduler;

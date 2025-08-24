@@ -1,4 +1,4 @@
-import { MultipartInterceptor } from "./multipart.interceptor";
+import { MultipartInterceptor } from "./interceptor";
 
 describe("MultipartInterceptor", () => {
 	it("should be defined", () => {

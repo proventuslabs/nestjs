@@ -5,7 +5,7 @@ import {
 	ConfigurableModuleClass,
 	MODULE_OPTIONS_TOKEN,
 	type OPTIONS_TYPE,
-} from "./multipart.module-definition";
+} from "./module-definition";
 
 /**
  * A dynamic NestJS module for handling multipart/form-data requests.

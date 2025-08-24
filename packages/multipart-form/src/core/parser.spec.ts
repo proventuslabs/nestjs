@@ -10,9 +10,9 @@ import {
 	PartsLimitError,
 	TruncatedFieldError,
 	TruncatedFileError,
-} from "./multipart.errors";
-import { parseMultipartData } from "./multipart.parser";
-import type { MultipartOptions } from "./multipart.types";
+} from "./errors";
+import { parseMultipartData } from "./parser";
+import type { MultipartOptions } from "./types";
 
 describe("parseMultipartData", () => {
 	let _testScheduler: TestScheduler;

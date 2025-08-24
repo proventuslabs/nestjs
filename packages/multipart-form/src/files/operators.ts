@@ -2,9 +2,9 @@ import { buffer } from "node:stream/consumers";
 
 import { filter, from, map, mergeMap, Observable, tap } from "rxjs";
 
-import { MissingFilesError } from "./multipart.errors";
-import type { MultipartFileBuffer, MultipartFileStream } from "./multipart.types";
-import { wrapBufferIntoMultipartFileBuffer } from "./multipart.utils";
+import { MissingFilesError } from "../core/errors";
+import type { MultipartFileBuffer, MultipartFileStream } from "../core/types";
+import { wrapBufferIntoMultipartFileBuffer } from "../core/utils";
 
 /**
  * RxJS operator that filters multipart files by field names and auto-drains unwanted streams.

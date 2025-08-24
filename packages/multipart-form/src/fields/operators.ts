@@ -1,8 +1,8 @@
 import qs from "qs";
 import { filter, map, Observable, tap, toArray } from "rxjs";
 
-import { MissingFieldsError } from "./multipart.errors";
-import type { MultipartField } from "./multipart.types";
+import { MissingFieldsError } from "../core/errors";
+import type { MultipartField } from "../core/types";
 
 /**
  * @internal

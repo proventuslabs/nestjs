@@ -1,9 +1,6 @@
 import { Readable } from "node:stream";
 
-import {
-	wrapBufferIntoMultipartFileBuffer,
-	wrapReadableIntoMultipartFileStream,
-} from "./multipart.utils";
+import { wrapBufferIntoMultipartFileBuffer, wrapReadableIntoMultipartFileStream } from "./utils";
 
 describe("wrapReadableIntoMultipartFileStream", () => {
 	it("should wrap a readable stream with multipart file metadata", () => {

@@ -11,9 +11,9 @@ import {
 	PartsLimitError,
 	TruncatedFieldError,
 	TruncatedFileError,
-} from "./multipart.errors";
-import type { MultipartField, MultipartFileStream, MultipartOptions } from "./multipart.types";
-import { wrapReadableIntoMultipartFileStream } from "./multipart.utils";
+} from "./errors";
+import type { MultipartField, MultipartFileStream, MultipartOptions } from "./types";
+import { wrapReadableIntoMultipartFileStream } from "./utils";
 
 /**
  * Parses a multipart/form-data request into streams of files and fields.

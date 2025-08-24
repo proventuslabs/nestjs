@@ -19,7 +19,7 @@ import {
 	PartsLimitError,
 	TruncatedFieldError,
 	TruncatedFileError,
-} from "./multipart.errors";
+} from "../core/errors";
 
 /**
  * Exception filter that catches all MultipartError instances (including subclasses)

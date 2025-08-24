@@ -2,7 +2,7 @@ import type { Readable } from "node:stream";
 
 import { isArray, isString } from "lodash";
 
-import type { MultipartFileBuffer, MultipartFileStream } from "./multipart.types";
+import type { MultipartFileBuffer, MultipartFileStream } from "./types";
 
 /**
  * @internal

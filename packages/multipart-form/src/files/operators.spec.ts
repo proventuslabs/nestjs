@@ -4,14 +4,10 @@ import { Readable } from "node:stream";
 import { of } from "rxjs";
 import { TestScheduler } from "rxjs/testing";
 
-import { MissingFilesError } from "./multipart.errors";
-import type { MultipartFileBuffer, MultipartFileStream } from "./multipart.types";
-import { wrapReadableIntoMultipartFileStream } from "./multipart.utils";
-import {
-	bufferFiles,
-	filterFilesByFieldNames,
-	validateRequiredFiles,
-} from "./multipart-files.operators";
+import { MissingFilesError } from "../core/errors";
+import type { MultipartFileBuffer, MultipartFileStream } from "../core/types";
+import { wrapReadableIntoMultipartFileStream } from "../core/utils";
+import { bufferFiles, filterFilesByFieldNames, validateRequiredFiles } from "./operators";
 
 describe("multipart-files.operators", () => {
 	let testScheduler: TestScheduler;

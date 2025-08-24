@@ -10,9 +10,9 @@ import {
 import type { Request } from "express";
 import { finalize, type Observable, Subject, switchMap, tap } from "rxjs";
 
-import { MODULE_OPTIONS_TOKEN } from "./multipart.module-definition";
-import { parseMultipartData } from "./multipart.parser";
-import type { MultipartOptions } from "./multipart.types";
+import { parseMultipartData } from "../core/parser";
+import type { MultipartOptions } from "../core/types";
+import { MODULE_OPTIONS_TOKEN } from "./module-definition";
 
 /**
  * Creates a NestJS HTTP interceptor that parses multipart/form-data requests using RxJS streams.

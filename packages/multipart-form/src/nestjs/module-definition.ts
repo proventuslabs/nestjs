@@ -1,6 +1,6 @@
 import { ConfigurableModuleBuilder } from "@nestjs/common";
 
-import type { MultipartOptions } from "./multipart.types";
+import type { MultipartOptions } from "../core/types";
 
 /**
  * Configurable module builder for the MultipartModule.

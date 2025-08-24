@@ -3,9 +3,9 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 import type { Request } from "express";
 import { EMPTY, type Observable } from "rxjs";
 
-import type { MultipartField } from "./multipart.types";
-import { parseDecoratorOptions } from "./multipart.utils";
-import { filterFieldsByPatterns, validateRequiredFields } from "./multipart-fields.operators";
+import type { MultipartField } from "../core/types";
+import { parseDecoratorOptions } from "../core/utils";
+import { filterFieldsByPatterns, validateRequiredFields } from "./operators";
 
 export function multipartFieldsFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,

@@ -1,15 +1,15 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: we use arrays to create sources and we know inline that [0] is not undefined */
 import { TestScheduler } from "rxjs/testing";
 
-import { MissingFieldsError } from "./multipart.errors";
-import type { MultipartField } from "./multipart.types";
+import { MissingFieldsError } from "../core/errors";
+import type { MultipartField } from "../core/types";
 import {
 	associateFields,
 	collectAssociatives,
 	collectToRecord,
 	filterFieldsByPatterns,
 	validateRequiredFields,
-} from "./multipart-fields.operators";
+} from "./operators";
 
 describe("multipart-fields.operators", () => {
 	let testScheduler: TestScheduler;

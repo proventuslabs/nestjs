@@ -4,9 +4,9 @@ import { createMock } from "@golevelup/ts-jest";
 import { type Observable, of } from "rxjs";
 import { TestScheduler } from "rxjs/testing";
 
-import { MissingFieldsError } from "./multipart.errors";
-import type { MultipartField } from "./multipart.types";
-import { multipartFieldsFactory } from "./multipart-fields.decorator";
+import { MissingFieldsError } from "../core/errors";
+import type { MultipartField } from "../core/types";
+import { multipartFieldsFactory } from "./decorator";
 
 describe("multipartFieldsFactory", () => {
 	let scheduler: TestScheduler;
