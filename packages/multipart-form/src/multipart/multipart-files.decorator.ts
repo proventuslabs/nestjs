@@ -2,10 +2,10 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 import type { Request } from "express";
 import { isArray, isString } from "lodash";
-import { EMPTY, filter, Observable, tap } from "rxjs";
+import { EMPTY, type Observable } from "rxjs";
 
-import { MissingFilesError } from "./multipart.errors";
 import type { MultipartFileStream } from "./multipart.types";
+import { filterFilesByFieldNames, validateRequiredFiles } from "./multipart-files.operators";
 
 export function multipartFilesFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
@@ -18,55 +18,27 @@ export function multipartFilesFactory(
 
 	if (!files$) return EMPTY;
 
-	let required: Set<string>;
-	let optional: Set<string>;
+	let required: string[];
+	let optional: string[];
 
 	if (isString(options)) {
-		required = new Set([options]);
-		optional = new Set();
+		required = [options];
+		optional = [];
 	} else if (isArray(options)) {
-		required = new Set(
-			options.filter((v) => isString(v) || v[1] !== false).map((v) => (isString(v) ? v : v[0])),
-		);
-		optional = new Set(
-			options.filter((v) => isArray(v) && v[1] === false).map((v) => (isString(v) ? v : v[0])),
-		);
+		required = options
+			.filter((v) => isString(v) || v[1] !== false)
+			.map((v) => (isString(v) ? v : v[0]));
+		optional = options
+			.filter((v) => isArray(v) && v[1] === false)
+			.map((v) => (isString(v) ? v : v[0]));
 	} else {
 		// 'undefined' - return all files without validation
 		return files$;
 	}
 
-	const all = new Set([...required.values(), ...optional.values()]);
+	const allFieldNames = [...required, ...optional];
 
-	return new Observable<MultipartFileStream>((subscriber) => {
-		const subscription = files$
-			.pipe(
-				tap((stream) => {
-					// auto-drain unwanted streams
-					if (!all.has(stream.fieldname)) stream.resume();
-				}),
-				filter((stream) => all.has(stream.fieldname)),
-				tap((stream) => {
-					required.delete(stream.fieldname);
-					optional.delete(stream.fieldname);
-					all.delete(stream.fieldname);
-				}),
-			)
-			.subscribe({
-				next: (stream) => subscriber.next(stream),
-				error: (err) => subscriber.error(err),
-				complete: () => {
-					// check for missing REQUIRED files when upstream completes
-					if (required.size > 0) {
-						subscriber.error(new MissingFilesError(Array.from(required)));
-					} else {
-						subscriber.complete();
-					}
-				},
-			});
-
-		return () => subscription.unsubscribe();
-	});
+	return files$.pipe(filterFilesByFieldNames(allFieldNames), validateRequiredFiles(required));
 }
 
 /**

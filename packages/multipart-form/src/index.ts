@@ -7,3 +7,4 @@ export * from "./multipart/multipart-exception.filter";
 export * from "./multipart/multipart-fields.decorator";
 export * from "./multipart/multipart-fields.operators";
 export * from "./multipart/multipart-files.decorator";
+export * from "./multipart/multipart-files.operators";

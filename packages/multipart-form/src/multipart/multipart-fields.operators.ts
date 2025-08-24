@@ -1,7 +1,45 @@
 import qs from "qs";
-import { map, type Observable, toArray } from "rxjs";
+import { filter, map, Observable, tap, toArray } from "rxjs";
 
+import { MissingFieldsError } from "./multipart.errors";
 import type { MultipartField } from "./multipart.types";
+
+/**
+ * @internal
+ * Parses a field pattern to determine if it uses "starts with" syntax.
+ *
+ * @param pattern The field pattern to parse
+ * @returns Object with the actual field name and whether it's a "starts with" pattern
+ */
+function parseFieldPattern(pattern: string): { fieldName: string; startsWithMatch: boolean } {
+	if (pattern.startsWith("^")) {
+		return {
+			fieldName: pattern.slice(1),
+			startsWithMatch: true,
+		};
+	}
+	return {
+		fieldName: pattern,
+		startsWithMatch: false,
+	};
+}
+
+/**
+ * @internal
+ * Checks if a field name matches a pattern.
+ *
+ * @param fieldName The actual field name from the multipart form
+ * @param pattern The pattern to match against (may include ^ prefix)
+ * @returns True if the field matches the pattern
+ */
+function matchesFieldPattern(fieldName: string, pattern: string): boolean {
+	const { fieldName: patternName, startsWithMatch } = parseFieldPattern(pattern);
+
+	if (startsWithMatch) {
+		return fieldName.startsWith(patternName);
+	}
+	return fieldName === patternName;
+}
 
 /**
  * @internal
@@ -120,5 +158,103 @@ export function collectAssociatives(
 			toArray(),
 			map((q) => qs.parse(q.join("&"), options)),
 		);
+	};
+}
+
+/**
+ * RxJS operator that converts multipart fields to a simple key-value record.
+ *
+ * @returns RxJS operator function that converts MultipartField observables to a record
+ *
+ * @example
+ * fields$.pipe(
+ *   collectToRecord()
+ * ).subscribe(record => {
+ *   console.log(record); // { name: "John", email: "john@example.com" }
+ * });
+ */
+export function collectToRecord() {
+	return (source: Observable<MultipartField>): Observable<Record<string, string>> => {
+		return source.pipe(
+			toArray(),
+			map((fields) => {
+				const record: Record<string, string> = {};
+				for (const field of fields) {
+					record[field.name] = field.value;
+				}
+				return record;
+			}),
+		);
+	};
+}
+
+/**
+ * RxJS operator that filters multipart fields by pattern matching.
+ *
+ * @param patterns Array of patterns to match against field names
+ * @returns RxJS operator function that filters MultipartField observables
+ *
+ * @example
+ * fields$.pipe(
+ *   filterFieldsByPatterns(['name', '^user_'])
+ * ).subscribe(field => console.log('Matched field:', field.name));
+ */
+export function filterFieldsByPatterns(patterns: string[]) {
+	return (source: Observable<MultipartField>): Observable<MultipartField> => {
+		return source.pipe(
+			filter((field) => {
+				// check if field matches any pattern
+				return patterns.some((pattern) => matchesFieldPattern(field.name, pattern));
+			}),
+		);
+	};
+}
+
+/**
+ * RxJS operator that validates required field patterns are present when stream completes.
+ *
+ * @param requiredPatterns Array of required field patterns
+ * @returns RxJS operator function that validates MultipartField observables
+ *
+ * @example
+ * fields$.pipe(
+ *   filterFieldsByPatterns(['name', '^user_', 'metadata']),
+ *   validateRequiredFields(['name', '^user_'])
+ * ).subscribe(field => console.log('Valid field:', field.name));
+ */
+export function validateRequiredFields(requiredPatterns: string[]) {
+	return (source: Observable<MultipartField>): Observable<MultipartField> => {
+		return new Observable<MultipartField>((subscriber) => {
+			const matchedRequiredPatterns = new Set<string>();
+
+			const subscription = source
+				.pipe(
+					tap((field) => {
+						// track which required patterns have been matched
+						for (const pattern of requiredPatterns) {
+							if (matchesFieldPattern(field.name, pattern)) {
+								matchedRequiredPatterns.add(pattern);
+							}
+						}
+					}),
+				)
+				.subscribe({
+					next: (field) => subscriber.next(field),
+					error: (err) => subscriber.error(err),
+					complete: () => {
+						// check for missing REQUIRED patterns when upstream completes
+						const missingRequired = requiredPatterns.filter(
+							(pattern) => !matchedRequiredPatterns.has(pattern),
+						);
+						if (missingRequired.length > 0) {
+							subscriber.error(new MissingFieldsError(missingRequired));
+						} else {
+							subscriber.complete();
+						}
+					},
+				});
+
+			return () => subscription.unsubscribe();
+		});
 	};
 }

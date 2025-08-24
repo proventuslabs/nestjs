@@ -34,16 +34,16 @@ export interface MultipartOptions extends Omit<BusboyConfig, "headers"> {
  */
 export interface MultipartFileData {
 	/** The form field name for this file. */
-	fieldname: string;
+	readonly fieldname: string;
 
 	/** The original filename of the uploaded file. */
-	filename: string;
+	readonly filename: string;
 
 	/** The MIME type, otherwise empty. */
-	mimetype: string;
+	readonly mimetype: string;
 
 	/** The multipart-form encoding of the file. */
-	encoding: string;
+	readonly encoding: string;
 }
 
 /**
@@ -52,24 +52,30 @@ export interface MultipartFileData {
  */
 export interface MultipartFileStream extends Readable, MultipartFileData {
 	/** Indicates if the file stream was truncated due to size limits (best checked at the end of the stream). */
-	truncated?: boolean;
+	readonly truncated?: boolean;
 }
+
+/**
+ * Represents a buffered file from a multipart request.
+ * Extends `Buffer` and includes file metadata.
+ */
+export interface MultipartFileBuffer extends Buffer, MultipartFileData {}
 
 /**
  * Base properties shared by all multipart fields.
  */
 interface MultipartFieldBase {
 	/** The full original name of the form field. */
-	name: string;
+	readonly name: string;
 
 	/** The value of the form field. */
-	value: string;
+	readonly value: string;
 
 	/** The MIME type, empty if not a file. */
-	mimetype: string;
+	readonly mimetype: string;
 
 	/** The multipart-form encoding of the field. */
-	encoding: string;
+	readonly encoding: string;
 }
 
 /**

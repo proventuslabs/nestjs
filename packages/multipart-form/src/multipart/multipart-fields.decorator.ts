@@ -2,45 +2,10 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 import type { Request } from "express";
 import { isArray, isString } from "lodash";
-import { EMPTY, filter, Observable, tap } from "rxjs";
+import { EMPTY, type Observable } from "rxjs";
 
-import { MissingFieldsError } from "./multipart.errors";
 import type { MultipartField } from "./multipart.types";
-
-/**
- * Parses a field pattern to determine if it uses "starts with" syntax.
- *
- * @param pattern The field pattern to parse
- * @returns Object with the actual field name and whether it's a "starts with" pattern
- */
-function parseFieldPattern(pattern: string): { fieldName: string; startsWithMatch: boolean } {
-	if (pattern.startsWith("^")) {
-		return {
-			fieldName: pattern.slice(1),
-			startsWithMatch: true,
-		};
-	}
-	return {
-		fieldName: pattern,
-		startsWithMatch: false,
-	};
-}
-
-/**
- * Checks if a field name matches a pattern.
- *
- * @param fieldName The actual field name from the multipart form
- * @param pattern The pattern to match against (may include ^ prefix)
- * @returns True if the field matches the pattern
- */
-function matchesFieldPattern(fieldName: string, pattern: string): boolean {
-	const { fieldName: patternName, startsWithMatch } = parseFieldPattern(pattern);
-
-	if (startsWithMatch) {
-		return fieldName.startsWith(patternName);
-	}
-	return fieldName === patternName;
-}
+import { filterFieldsByPatterns, validateRequiredFields } from "./multipart-fields.operators";
 
 export function multipartFieldsFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
@@ -73,42 +38,10 @@ export function multipartFieldsFactory(
 
 	const allPatterns = [...requiredPatterns, ...optionalPatterns];
 
-	return new Observable<MultipartField>((subscriber) => {
-		const matchedRequiredPatterns = new Set<string>();
-
-		const subscription = fields$
-			.pipe(
-				filter((field) => {
-					// check if field matches any pattern
-					return allPatterns.some((pattern) => matchesFieldPattern(field.name, pattern));
-				}),
-				tap((field) => {
-					// track which required patterns have been matched
-					for (const pattern of requiredPatterns) {
-						if (matchesFieldPattern(field.name, pattern)) {
-							matchedRequiredPatterns.add(pattern);
-						}
-					}
-				}),
-			)
-			.subscribe({
-				next: (stream) => subscriber.next(stream),
-				error: (err) => subscriber.error(err),
-				complete: () => {
-					// check for missing REQUIRED patterns when upstream completes
-					const missingRequired = requiredPatterns.filter(
-						(pattern) => !matchedRequiredPatterns.has(pattern),
-					);
-					if (missingRequired.length > 0) {
-						subscriber.error(new MissingFieldsError(missingRequired));
-					} else {
-						subscriber.complete();
-					}
-				},
-			});
-
-		return () => subscription.unsubscribe();
-	});
+	return fields$.pipe(
+		filterFieldsByPatterns(allPatterns),
+		validateRequiredFields(requiredPatterns),
+	);
 }
 
 /**

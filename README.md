@@ -25,16 +25,14 @@ npm install @proventuslabs/nestjs-zod
 
 ### [@proventuslabs/nestjs-multipart-form](./packages/multipart-form/)
 
-A lightweight and efficient NestJS package for handling multipart form data and file uploads with RxJS streaming support and type safety.
+A lightweight NestJS package for handling multipart form data with RxJS streaming, type safety, and composable operators.
 
 **Features:**
-- 🔄 **Express Integration**: Built for Express.js applications
-- 📁 **RxJS Streaming**: Handle files and fields efficiently with RxJS Observables and Node.js streams
-- 🎯 **Type-Safe Decorators**: Built-in decorators with validation and pattern matching support
-- 🔧 **Flexible Configuration**: Customizable Busboy configuration options
-- 🛡️ **Validation Support**: Required/optional fields with pattern matching (e.g., `^user_` for fields starting with "user_")
-- ⚡ **High Performance**: Lightweight implementation with minimal overhead
-- 🚨 **Comprehensive Error Handling**: Custom exception filter with proper HTTP status codes
+- 🔄 **RxJS Streaming**: Process files/fields as they arrive, not after complete parsing
+- 🎯 **Type-Safe**: Full TypeScript support with `MultipartFileStream` and `MultipartFileBuffer`
+- 🔧 **Composable Operators**: Reusable operators for filtering, validation, and transformation
+- 🛡️ **Pattern Matching**: Support for exact matches and "starts with" patterns (`^prefix_`)
+- 🚨 **Error Handling**: Built-in validation with proper HTTP status codes
 
 **Installation:**
 ```bash

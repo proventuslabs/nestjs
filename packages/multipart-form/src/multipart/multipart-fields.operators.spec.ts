@@ -1,8 +1,15 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: we use arrays to create sources and we know inline that [0] is not undefined */
 import { TestScheduler } from "rxjs/testing";
 
+import { MissingFieldsError } from "./multipart.errors";
 import type { MultipartField } from "./multipart.types";
-import { associateFields, collectAssociatives } from "./multipart-fields.operators";
+import {
+	associateFields,
+	collectAssociatives,
+	collectToRecord,
+	filterFieldsByPatterns,
+	validateRequiredFields,
+} from "./multipart-fields.operators";
 
 describe("multipart-fields.operators", () => {
 	let testScheduler: TestScheduler;
@@ -344,6 +351,292 @@ describe("multipart-fields.operators", () => {
 					expected,
 					expectedValues,
 				);
+			});
+		});
+	});
+
+	describe("collectToRecord", () => {
+		it("should collect fields into a simple key-value record", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+					{ name: "age", value: "25", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(abc|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+				});
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {
+						username: "john",
+						email: "john@example.com",
+						age: "25",
+					},
+				};
+
+				expectObservable(source$.pipe(collectToRecord())).toBe(expected, expectedValues);
+			});
+		});
+
+		it("should handle empty fields", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const source$ = cold<MultipartField>("|");
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {},
+				};
+
+				expectObservable(source$.pipe(collectToRecord())).toBe(expected, expectedValues);
+			});
+		});
+
+		it("should handle duplicate field names (last one wins)", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "field", value: "first", mimetype: "", encoding: "7bit" },
+					{ name: "field", value: "second", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(ab|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+				});
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: {
+						field: "second", // Last value wins
+					},
+				};
+
+				expectObservable(source$.pipe(collectToRecord())).toBe(expected, expectedValues);
+			});
+		});
+	});
+
+	describe("filterFieldsByPatterns", () => {
+		it("should filter fields by exact pattern match", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+					{ name: "age", value: "25", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(abc|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+				});
+
+				const expected = "(ab|)";
+				const expectedValues = {
+					a: fields[0]!,
+					b: fields[1]!,
+				};
+
+				expectObservable(source$.pipe(filterFieldsByPatterns(["username", "email"]))).toBe(
+					expected,
+					expectedValues,
+				);
+			});
+		});
+
+		it("should filter fields by starts-with pattern", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "user_name", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "user_email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+					{ name: "admin_role", value: "admin", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(abc|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+				});
+
+				const expected = "(ab|)";
+				const expectedValues = {
+					a: fields[0]!,
+					b: fields[1]!,
+				};
+
+				expectObservable(source$.pipe(filterFieldsByPatterns(["^user_"]))).toBe(
+					expected,
+					expectedValues,
+				);
+			});
+		});
+
+		it("should handle mixed exact and starts-with patterns", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "user_email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+					{ name: "user_profile", value: "profile", mimetype: "", encoding: "7bit" },
+					{ name: "admin_role", value: "admin", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(abcd|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+					d: fields[3]!,
+				});
+
+				const expected = "(abc|)";
+				const expectedValues = {
+					a: fields[0]!,
+					b: fields[1]!,
+					c: fields[2]!,
+				};
+
+				expectObservable(source$.pipe(filterFieldsByPatterns(["username", "^user_"]))).toBe(
+					expected,
+					expectedValues,
+				);
+			});
+		});
+
+		it("should pass through no fields when no patterns match", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(ab|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+				});
+
+				const expected = "|";
+
+				expectObservable(source$.pipe(filterFieldsByPatterns(["nonexistent"]))).toBe(expected);
+			});
+		});
+	});
+
+	describe("validateRequiredFields", () => {
+		it("should pass through all fields when all required patterns are present", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(ab|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+				});
+
+				const expected = "(ab|)";
+				const expectedValues = {
+					a: fields[0]!,
+					b: fields[1]!,
+				};
+
+				expectObservable(source$.pipe(validateRequiredFields(["username", "email"]))).toBe(
+					expected,
+					expectedValues,
+				);
+			});
+		});
+
+		it("should error when required patterns are missing", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(a|)", {
+					a: fields[0]!,
+				});
+
+				const expected = "(a#)";
+				const expectedValues = {
+					a: fields[0]!,
+				};
+
+				expectObservable(source$.pipe(validateRequiredFields(["username", "email"]))).toBe(
+					expected,
+					expectedValues,
+					new MissingFieldsError(["email"]),
+				);
+			});
+		});
+
+		it("should work with starts-with patterns", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "user_name", value: "john", mimetype: "", encoding: "7bit" },
+					{ name: "user_email", value: "john@example.com", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(ab|)", {
+					a: fields[0]!,
+					b: fields[1]!,
+				});
+
+				const expected = "(ab|)";
+				const expectedValues = {
+					a: fields[0]!,
+					b: fields[1]!,
+				};
+
+				expectObservable(source$.pipe(validateRequiredFields(["^user_"]))).toBe(
+					expected,
+					expectedValues,
+				);
+			});
+		});
+
+		it("should error when starts-with pattern has no matches", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "admin_role", value: "admin", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(a|)", {
+					a: fields[0]!,
+				});
+
+				const expected = "(a#)";
+				const expectedValues = {
+					a: fields[0]!,
+				};
+
+				expectObservable(source$.pipe(validateRequiredFields(["^user_"]))).toBe(
+					expected,
+					expectedValues,
+					new MissingFieldsError(["^user_"]),
+				);
+			});
+		});
+
+		it("should pass when no required patterns specified", () => {
+			testScheduler.run(({ cold, expectObservable }) => {
+				const fields: MultipartField[] = [
+					{ name: "username", value: "john", mimetype: "", encoding: "7bit" },
+				];
+
+				const source$ = cold("(a|)", {
+					a: fields[0]!,
+				});
+
+				const expected = "(a|)";
+				const expectedValues = {
+					a: fields[0]!,
+				};
+
+				expectObservable(source$.pipe(validateRequiredFields([]))).toBe(expected, expectedValues);
 			});
 		});
 	});
