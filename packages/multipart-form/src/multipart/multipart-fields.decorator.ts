@@ -1,11 +1,11 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 import type { Request } from "express";
-import { isArray, isString } from "lodash";
 import { EMPTY, type Observable } from "rxjs";
 
 import type { MultipartField } from "./multipart.types";
 import { filterFieldsByPatterns, validateRequiredFields } from "./multipart-fields.operators";
+import { parseDecoratorOptions } from "./multipart.utils";
 
 export function multipartFieldsFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
@@ -18,25 +18,10 @@ export function multipartFieldsFactory(
 
 	if (!fields$) return EMPTY;
 
-	let requiredPatterns: string[];
-	let optionalPatterns: string[];
+	// 'undefined' - return all fields without validation
+	if (options === undefined) return fields$;
 
-	if (isString(options)) {
-		requiredPatterns = [options];
-		optionalPatterns = [];
-	} else if (isArray(options)) {
-		requiredPatterns = options
-			.filter((v) => isString(v) || v[1] !== false)
-			.map((v) => (isString(v) ? v : v[0]));
-		optionalPatterns = options
-			.filter((v) => isArray(v) && v[1] === false)
-			.map((v) => (isString(v) ? v : v[0]));
-	} else {
-		// 'undefined' - return all fields without validation
-		return fields$;
-	}
-
-	const allPatterns = [...requiredPatterns, ...optionalPatterns];
+	const { required: requiredPatterns, all: allPatterns } = parseDecoratorOptions(options);
 
 	return fields$.pipe(
 		filterFieldsByPatterns(allPatterns),

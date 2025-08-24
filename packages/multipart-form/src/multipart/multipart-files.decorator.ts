@@ -1,11 +1,11 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 import type { Request } from "express";
-import { isArray, isString } from "lodash";
 import { EMPTY, type Observable } from "rxjs";
 
 import type { MultipartFileStream } from "./multipart.types";
 import { filterFilesByFieldNames, validateRequiredFiles } from "./multipart-files.operators";
+import { parseDecoratorOptions } from "./multipart.utils";
 
 export function multipartFilesFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
@@ -18,25 +18,10 @@ export function multipartFilesFactory(
 
 	if (!files$) return EMPTY;
 
-	let required: string[];
-	let optional: string[];
+	// 'undefined' - return all files without validation
+	if (options === undefined) return files$;
 
-	if (isString(options)) {
-		required = [options];
-		optional = [];
-	} else if (isArray(options)) {
-		required = options
-			.filter((v) => isString(v) || v[1] !== false)
-			.map((v) => (isString(v) ? v : v[0]));
-		optional = options
-			.filter((v) => isArray(v) && v[1] === false)
-			.map((v) => (isString(v) ? v : v[0]));
-	} else {
-		// 'undefined' - return all files without validation
-		return files$;
-	}
-
-	const allFieldNames = [...required, ...optional];
+	const { required, all: allFieldNames } = parseDecoratorOptions(options);
 
 	return files$.pipe(filterFilesByFieldNames(allFieldNames), validateRequiredFiles(required));
 }

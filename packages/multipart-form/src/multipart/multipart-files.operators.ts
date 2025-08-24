@@ -19,8 +19,16 @@ import { wrapBufferIntoMultipartFileBuffer } from "./multipart.utils";
  */
 export function filterFilesByFieldNames(fieldNames: string[]) {
 	return (source: Observable<MultipartFileStream>): Observable<MultipartFileStream> => {
-		const fieldSet = new Set(fieldNames);
+		// early exit if no field names (should not happen but defensive)
+		if (fieldNames.length === 0) {
+			return source.pipe(
+				tap((stream) => stream.resume()), // drain all streams
+				filter(() => false),
+			);
+		}
 
+
+		const fieldSet = new Set(fieldNames);
 		return source.pipe(
 			tap((stream) => {
 				// auto-drain unwanted streams
@@ -45,13 +53,16 @@ export function filterFilesByFieldNames(fieldNames: string[]) {
  */
 export function validateRequiredFiles(requiredFieldNames: string[]) {
 	return (source: Observable<MultipartFileStream>): Observable<MultipartFileStream> => {
+		// early exit if no required field names
+		if (requiredFieldNames.length === 0) return source;
+
 		return new Observable<MultipartFileStream>((subscriber) => {
-			const required = new Set(requiredFieldNames);
+			const remainingRequired = new Set(requiredFieldNames);
 
 			const subscription = source
 				.pipe(
 					tap((stream) => {
-						required.delete(stream.fieldname);
+						remainingRequired.delete(stream.fieldname);
 					}),
 				)
 				.subscribe({
@@ -59,8 +70,8 @@ export function validateRequiredFiles(requiredFieldNames: string[]) {
 					error: (err) => subscriber.error(err),
 					complete: () => {
 						// check for missing REQUIRED files when upstream completes
-						if (required.size > 0) {
-							subscriber.error(new MissingFilesError(Array.from(required)));
+						if (remainingRequired.size > 0) {
+							subscriber.error(new MissingFilesError(Array.from(remainingRequired)));
 						} else {
 							subscriber.complete();
 						}

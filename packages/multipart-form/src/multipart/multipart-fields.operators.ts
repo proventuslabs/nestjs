@@ -6,39 +6,17 @@ import type { MultipartField } from "./multipart.types";
 
 /**
  * @internal
- * Parses a field pattern to determine if it uses "starts with" syntax.
- *
- * @param pattern The field pattern to parse
- * @returns Object with the actual field name and whether it's a "starts with" pattern
- */
-function parseFieldPattern(pattern: string): { fieldName: string; startsWithMatch: boolean } {
-	if (pattern.startsWith("^")) {
-		return {
-			fieldName: pattern.slice(1),
-			startsWithMatch: true,
-		};
-	}
-	return {
-		fieldName: pattern,
-		startsWithMatch: false,
-	};
-}
-
-/**
- * @internal
  * Checks if a field name matches a pattern.
  *
  * @param fieldName The actual field name from the multipart form
- * @param pattern The pattern to match against (may include ^ prefix)
+ * @param pattern The pattern to match against (may include ^ prefix for "starts with")
  * @returns True if the field matches the pattern
  */
 function matchesFieldPattern(fieldName: string, pattern: string): boolean {
-	const { fieldName: patternName, startsWithMatch } = parseFieldPattern(pattern);
-
-	if (startsWithMatch) {
-		return fieldName.startsWith(patternName);
+	if (pattern.startsWith("^")) {
+		return fieldName.startsWith(pattern.slice(1));
 	}
-	return fieldName === patternName;
+	return fieldName === pattern;
 }
 
 /**
@@ -177,13 +155,7 @@ export function collectToRecord() {
 	return (source: Observable<MultipartField>): Observable<Record<string, string>> => {
 		return source.pipe(
 			toArray(),
-			map((fields) => {
-				const record: Record<string, string> = {};
-				for (const field of fields) {
-					record[field.name] = field.value;
-				}
-				return record;
-			}),
+			map((fields) => Object.fromEntries(fields.map((field) => [field.name, field.value]))),
 		);
 	};
 }
@@ -224,16 +196,21 @@ export function filterFieldsByPatterns(patterns: string[]) {
  */
 export function validateRequiredFields(requiredPatterns: string[]) {
 	return (source: Observable<MultipartField>): Observable<MultipartField> => {
+		// early exit if no required patterns
+		if (requiredPatterns.length === 0) return source;
+
 		return new Observable<MultipartField>((subscriber) => {
-			const matchedRequiredPatterns = new Set<string>();
+			const remainingRequired = new Set(requiredPatterns);
 
 			const subscription = source
 				.pipe(
 					tap((field) => {
-						// track which required patterns have been matched
+						// track which required patterns have been matched and remove them
 						for (const pattern of requiredPatterns) {
-							if (matchesFieldPattern(field.name, pattern)) {
-								matchedRequiredPatterns.add(pattern);
+							if (remainingRequired.has(pattern) && matchesFieldPattern(field.name, pattern)) {
+								remainingRequired.delete(pattern);
+								// early exit if all requirements satisfied
+								if (remainingRequired.size === 0) break;
 							}
 						}
 					}),
@@ -243,11 +220,8 @@ export function validateRequiredFields(requiredPatterns: string[]) {
 					error: (err) => subscriber.error(err),
 					complete: () => {
 						// check for missing REQUIRED patterns when upstream completes
-						const missingRequired = requiredPatterns.filter(
-							(pattern) => !matchedRequiredPatterns.has(pattern),
-						);
-						if (missingRequired.length > 0) {
-							subscriber.error(new MissingFieldsError(missingRequired));
+						if (remainingRequired.size > 0) {
+							subscriber.error(new MissingFieldsError(Array.from(remainingRequired)));
 						} else {
 							subscriber.complete();
 						}

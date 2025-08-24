@@ -1,5 +1,7 @@
 import type { Readable } from "node:stream";
 
+import { isArray, isString } from "lodash";
+
 import type { MultipartFileBuffer, MultipartFileStream } from "./multipart.types";
 
 /**
@@ -20,34 +22,15 @@ export function wrapReadableIntoMultipartFileStream(
 	encoding: string,
 	mimetype: string,
 ): MultipartFileStream {
-	const wrapped = Object.defineProperties(file, {
-		fieldname: {
-			value: fieldname,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		filename: {
-			value: filename,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		encoding: {
-			value: encoding,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		mimetype: {
-			value: mimetype,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-	});
+	const properties = { fieldname, filename, encoding, mimetype };
+	const descriptors = Object.fromEntries(
+		Object.entries(properties).map(([key, value]) => [
+			key,
+			{ value, writable: false, enumerable: true, configurable: false },
+		]),
+	);
 
-	return wrapped as MultipartFileStream;
+	return Object.defineProperties(file, descriptors) as MultipartFileStream;
 }
 
 /**
@@ -68,38 +51,41 @@ export function wrapBufferIntoMultipartFileBuffer(
 	encoding: string,
 	mimetype: string,
 ): MultipartFileBuffer {
-	const wrapped = Object.defineProperties(buffer, {
-		fieldname: {
-			value: fieldname,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		filename: {
-			value: filename,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		encoding: {
-			value: encoding,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		mimetype: {
-			value: mimetype,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-		size: {
-			value: buffer.length,
-			writable: false,
-			enumerable: true,
-			configurable: false,
-		},
-	});
+	const properties = { fieldname, filename, encoding, mimetype, size: buffer.length };
+	const descriptors = Object.fromEntries(
+		Object.entries(properties).map(([key, value]) => [
+			key,
+			{ value, writable: false, enumerable: true, configurable: false },
+		]),
+	);
 
-	return wrapped as MultipartFileBuffer;
+	return Object.defineProperties(buffer, descriptors) as MultipartFileBuffer;
+}
+
+/**
+ * @internal
+ * Parses decorator options into required and optional field/file names.
+ *
+ * @param options The options passed to the decorator
+ * @returns Object with required and optional arrays, and all combined
+ */
+export function parseDecoratorOptions(
+	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
+): { required: string[]; optional: string[]; all: string[] } {
+	if (isString(options)) {
+		return { required: [options], optional: [], all: [options] };
+	}
+
+	if (isArray(options)) {
+		const required = options
+			.filter((v) => isString(v) || v[1] !== false)
+			.map((v) => (isString(v) ? v : v[0]));
+		const optional = options
+			.filter((v) => isArray(v) && v[1] === false)
+			.map((v) => (isString(v) ? v : v[0]));
+		return { required, optional, all: [...required, ...optional] };
+	}
+
+	// undefined case - handled by callers
+	return { required: [], optional: [], all: [] };
 }
