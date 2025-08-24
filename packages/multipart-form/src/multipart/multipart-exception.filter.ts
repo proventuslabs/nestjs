@@ -35,9 +35,7 @@ import {
 @Catch(MultipartError)
 export class MultipartExceptionFilter implements ExceptionFilter {
 	catch(exception: MultipartError, host: ArgumentsHost) {
-		if (host.getType() !== 'http') {
-			throw exception;
-		}
+		if (host.getType() !== "http") throw exception;
 
 		const ctx = host.switchToHttp();
 		const res = ctx.getResponse<Response>();
