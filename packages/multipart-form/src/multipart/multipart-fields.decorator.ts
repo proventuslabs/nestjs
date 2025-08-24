@@ -67,7 +67,7 @@ export function multipartFieldsFactory(
 			.filter((v) => isArray(v) && v[1] === false)
 			.map((v) => (isString(v) ? v : v[0]));
 	} else {
-		// 'undefined' - return all fields without validation.
+		// 'undefined' - return all fields without validation
 		return fields$;
 	}
 
@@ -79,11 +79,11 @@ export function multipartFieldsFactory(
 		const subscription = fields$
 			.pipe(
 				filter((field) => {
-					// Check if field matches any pattern.
+					// check if field matches any pattern
 					return allPatterns.some((pattern) => matchesFieldPattern(field.name, pattern));
 				}),
 				tap((field) => {
-					// Track which required patterns have been matched.
+					// track which required patterns have been matched
 					for (const pattern of requiredPatterns) {
 						if (matchesFieldPattern(field.name, pattern)) {
 							matchedRequiredPatterns.add(pattern);
@@ -95,7 +95,7 @@ export function multipartFieldsFactory(
 				next: (stream) => subscriber.next(stream),
 				error: (err) => subscriber.error(err),
 				complete: () => {
-					// Check for missing REQUIRED patterns when upstream completes.
+					// check for missing REQUIRED patterns when upstream completes
 					const missingRequired = requiredPatterns.filter(
 						(pattern) => !matchedRequiredPatterns.has(pattern),
 					);

@@ -31,11 +31,11 @@ function parseAssociations(
 				buffer = "";
 				inBracket = true;
 			} else {
-				// Nested [ inside bracket → invalid.
+				// nested [ inside bracket → invalid
 				return undefined;
 			}
 		} else if (char === "]") {
-			if (!inBracket) return undefined; // Unmatched ].
+			if (!inBracket) return undefined; // unmatched ]
 			associations.push(buffer);
 			buffer = "";
 			inBracket = false;
@@ -44,7 +44,7 @@ function parseAssociations(
 		}
 	}
 
-	if (inBracket) return undefined; // Unclosed bracket.
+	if (inBracket) return undefined; // unclosed bracket
 	if (!basename) basename = buffer;
 	if (associations.length === 0) return undefined;
 
@@ -98,8 +98,8 @@ export function associateFields() {
 
 /**
  * RxJS operator that collects associatives multipart fields into arrays.
- * Fields with array-like syntax (field[] or field[0]) are collected into arrays while
- * fields with associative-like syntax (field[name]) are collected into objects.
+ * Fields with array-like syntax (field[]) are collected into arrays while
+ * fields with object-like syntax (field[name]) are collected into objects.
  * Uses `qs` under the hood.
  *
  * @example

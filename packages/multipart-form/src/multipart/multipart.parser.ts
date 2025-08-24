@@ -31,7 +31,7 @@ export function parseMultipartData(
 	upstreamExecutionDone$: Observable<never>,
 	options?: MultipartOptions,
 ) {
-	req.pause(); // We pause the stream as we attach an observable that will need a subscription.
+	req.pause(); // pause the stream as we attach an observable that will need a subscription
 
 	return new Observable<{
 		files: Observable<MultipartFileStream>;
@@ -79,7 +79,7 @@ export function parseMultipartData(
 			incomingFile.once("end", () => {
 				if (file.truncated) {
 					const err = new TruncatedFileError(fieldname);
-					incomingFile.emit("error", err); // Propagate the error to the file stream too.
+					incomingFile.emit("error", err); // propagate the error to the file stream too
 					fail(err);
 				}
 			});
@@ -113,13 +113,13 @@ export function parseMultipartData(
 
 		bb.on("error", (err) => fail(new MultipartError("Busboy processing error", { cause: err })));
 
-		// Allow subscriber to setup.
+		// allow subscriber to setup
 		subscriber.next({ files: files.asObservable(), fields: fields.asObservable() });
 
-		// Add an error handler in case the upstream throws.
+		// add an error handler in case the upstream throws
 		req.on("error", (err) => fail(new MultipartError("Request stream errored", { cause: err })));
 
-		// Start processing the request.
+		// start processing the request
 		req.pipe(bb, { end: true });
 		req.resume();
 

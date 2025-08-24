@@ -53,7 +53,7 @@ export function MultipartInterceptor(localOptions?: MultipartOptions) {
 
 			const options = localOptions ?? this.globalOptions;
 
-			// This subject is used to signal downstream when execution has been completed.
+			// this subject is used to signal downstream when execution has been completed
 			const upstreamExecutionDone$ = new Subject<never>();
 
 			const parser$ = parseMultipartData(req, req.headers, upstreamExecutionDone$, options).pipe(

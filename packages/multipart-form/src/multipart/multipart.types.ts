@@ -24,7 +24,7 @@ export interface MultipartOptions extends Omit<BusboyConfig, "headers"> {
 	/**
 	 * False will disable auto draining of unread files.
 	 *
-	 * **WARNING**: you are responsible to consume all files streams or busboy will **deadlock**!
+	 * **WARNING**: You are responsible to consume all files streams or busboy will **deadlock**!
 	 */
 	autodrain?: boolean;
 }

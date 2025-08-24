@@ -32,7 +32,7 @@ export function multipartFilesFactory(
 			options.filter((v) => isArray(v) && v[1] === false).map((v) => (isString(v) ? v : v[0])),
 		);
 	} else {
-		// 'undefined' - return all files without validation.
+		// 'undefined' - return all files without validation
 		return files$;
 	}
 
@@ -42,7 +42,7 @@ export function multipartFilesFactory(
 		const subscription = files$
 			.pipe(
 				tap((stream) => {
-					// Auto-drain unwanted streams.
+					// auto-drain unwanted streams
 					if (!all.has(stream.fieldname)) stream.resume();
 				}),
 				filter((stream) => all.has(stream.fieldname)),
@@ -56,7 +56,7 @@ export function multipartFilesFactory(
 				next: (stream) => subscriber.next(stream),
 				error: (err) => subscriber.error(err),
 				complete: () => {
-					// Check for missing REQUIRED files when upstream completes.
+					// check for missing REQUIRED files when upstream completes
 					if (required.size > 0) {
 						subscriber.error(new MissingFilesError(Array.from(required)));
 					} else {

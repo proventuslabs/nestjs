@@ -123,7 +123,8 @@ async uploadDocument(
 **Options:**
 - `limits` - File size and field limits (from Busboy)
 - `preservePath` - Whether to preserve file paths 
-- `bubbleErrors` - Bubble errors after controller ends
+- `bubbleErrors` - Bubble errors after controller ends (default: false)
+- `autodrain` - Auto-drain unread files (default: true)
 
 ### MultipartFiles Decorator
 
@@ -191,13 +192,44 @@ async handleForm(
 - `field[0][name]` → basename: `field`, associations: `["0", "name"]`
 - `[]` → basename: `<empty>`, associations: `[""]`
 
+### collectAssociatives()
+
+Collects associative multipart fields into structured objects and arrays using the `qs` library. Fields with array-like syntax (`field[]`) are collected into arrays, while fields with object-like syntax (`field[name]`) are collected into objects.
+
+```typescript
+import { collectAssociatives } from '@proventuslabs/nestjs-multipart-form';
+
+@Post('structured')
+@UseInterceptors(MultipartInterceptor())
+async handleStructuredForm(
+  @MultipartFields() fields$: Observable<MultipartField>
+) {
+  return fields$.pipe(
+    associateFields(),
+    collectAssociatives(),
+    map(parsed => {
+      // For fields "name[first]=John" and "name[last]=Doe":
+      console.log(parsed); // { "name": { "first": "John", "last": "Doe" } }
+      
+      // For fields "tags[]=urgent" and "tags[]=important":
+      console.log(parsed); // { "tags": ["urgent", "important"] }
+      
+      return parsed;
+    })
+  );
+}
+```
+
+The operator accepts optional `qs.IParseOptions` for customizing parsing behavior.
+
 ## 🚨 Error Handling
 
 Built-in error types:
 - **MissingFilesError** - Required files missing
 - **MissingFieldsError** - Required fields missing  
-- **FilesLimitError**, **FieldsLimitError**, **PartsLimitError** - Limit exceeded
+- **FilesLimitError**, **FieldsLimitError**, **PartsLimitError** - Limits exceeded
 - **TruncatedFileError**, **TruncatedFieldError** - Data truncated
+- **MultipartError** - Base class for all multipart-related errors
 
 ```typescript
 import { MultipartExceptionFilter } from '@proventuslabs/nestjs-multipart-form';

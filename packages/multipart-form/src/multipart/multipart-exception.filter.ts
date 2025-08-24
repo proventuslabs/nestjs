@@ -42,7 +42,7 @@ export class MultipartExceptionFilter implements ExceptionFilter {
 
 		let httpException: HttpException;
 
-		// Map specific multipart errors to appropriate HTTP exceptions
+		// map specific multipart errors to appropriate HTTP exceptions
 		if (
 			exception instanceof PartsLimitError ||
 			exception instanceof FilesLimitError ||
