@@ -4,8 +4,8 @@ import type { Request } from "express";
 import { EMPTY, type Observable } from "rxjs";
 
 import type { MultipartFileStream } from "./multipart.types";
-import { filterFilesByFieldNames, validateRequiredFiles } from "./multipart-files.operators";
 import { parseDecoratorOptions } from "./multipart.utils";
+import { filterFilesByFieldNames, validateRequiredFiles } from "./multipart-files.operators";
 
 export function multipartFilesFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,

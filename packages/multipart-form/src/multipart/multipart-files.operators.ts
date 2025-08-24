@@ -27,7 +27,6 @@ export function filterFilesByFieldNames(fieldNames: string[]) {
 			);
 		}
 
-
 		const fieldSet = new Set(fieldNames);
 		return source.pipe(
 			tap((stream) => {

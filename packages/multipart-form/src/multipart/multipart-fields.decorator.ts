@@ -4,8 +4,8 @@ import type { Request } from "express";
 import { EMPTY, type Observable } from "rxjs";
 
 import type { MultipartField } from "./multipart.types";
-import { filterFieldsByPatterns, validateRequiredFields } from "./multipart-fields.operators";
 import { parseDecoratorOptions } from "./multipart.utils";
+import { filterFieldsByPatterns, validateRequiredFields } from "./multipart-fields.operators";
 
 export function multipartFieldsFactory(
 	options: string | (string | [fieldname: string, required?: boolean])[] | undefined,
