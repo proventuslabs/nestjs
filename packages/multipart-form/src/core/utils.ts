@@ -51,7 +51,7 @@ export function wrapBufferIntoMultipartFileBuffer(
 	encoding: string,
 	mimetype: string,
 ): MultipartFileBuffer {
-	const properties = { fieldname, filename, encoding, mimetype, size: buffer.length };
+	const properties = { fieldname, filename, encoding, mimetype };
 	const descriptors = Object.fromEntries(
 		Object.entries(properties).map(([key, value]) => [
 			key,

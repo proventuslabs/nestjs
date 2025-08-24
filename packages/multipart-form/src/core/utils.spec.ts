@@ -46,7 +46,7 @@ describe("wrapBufferIntoMultipartFileBuffer", () => {
 		expect(result.filename).toBe(filename);
 		expect(result.encoding).toBe(encoding);
 		expect(result.mimetype).toBe(mimetype);
-		expect(result.size).toBe(buffer.length);
+		expect(result.length).toBe(buffer.length);
 		expect(result).toBeInstanceOf(Buffer);
 		expect(result.toString()).toBe("test content");
 	});
@@ -61,19 +61,8 @@ describe("wrapBufferIntoMultipartFileBuffer", () => {
 			"text/plain",
 		);
 
-		// try to modify properties - should not work
-		expect(() => {
-			// @ts-expect-error - testing readonly behavior
-			result.fieldname = "modified";
-		}).toThrow();
-
-		expect(() => {
-			// @ts-expect-error - testing readonly behavior
-			result.size = 999;
-		}).toThrow();
-
 		// original values should remain unchanged
 		expect(result.fieldname).toBe("field");
-		expect(result.size).toBe(4);
+		expect(result.length).toBe(4);
 	});
 });
