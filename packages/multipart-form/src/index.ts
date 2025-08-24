@@ -1,4 +1,5 @@
-export * from "./multipart/multipart.interceptor";
-export * from "./multipart/multipart.types";
-export * from "./multipart/multipart-file.decorator";
-export * from "./multipart/multipart-files.decorator";
+export * from "./nestjs";
+
+export * from "./core";
+export * from "./fields";
+export * from "./files";
