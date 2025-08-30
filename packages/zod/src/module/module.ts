@@ -16,9 +16,9 @@ import {
 	DEFAULT_METHOD_KEY,
 } from "@nestjs/common/module-utils/constants";
 
-import { ZodError, type ZodType, type ZodTypeDef } from "zod";
+import { $ZodError, type $ZodType, parseAsync } from "zod/v4/core";
 
-import { zodErrorToTypeError } from "../internal";
+import { typifyError } from "../internal";
 import type { ZodConfigurableModuleCls, ZodConfigurableModuleHost } from "./module.interfaces";
 import {
 	generateOptionsInjectionToken,
@@ -44,7 +44,7 @@ export class ZodConfigurableModuleBuilder<
 	protected readonly logger = new Logger(ZodConfigurableModuleBuilder.name);
 
 	public constructor(
-		protected readonly schema: ZodType<ModuleOptions, ZodTypeDef, ModuleOptionsInput>,
+		protected readonly schema: $ZodType<ModuleOptions, ModuleOptionsInput>,
 		protected readonly options: ConfigurableModuleBuilderOptions = {},
 		parentBuilder?: ZodConfigurableModuleBuilder<ModuleOptions, ModuleOptionsInput>,
 	) {
@@ -196,12 +196,16 @@ export class ZodConfigurableModuleBuilder<
 						useFactory: async () => {
 							const finalOptions = this.omitExtras(options, self.extras);
 							try {
-								return await self.schema.parseAsync(finalOptions);
+								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
-								if (err instanceof ZodError) {
-									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
-								}
-								throw err;
+								throw err instanceof $ZodError
+									? new TypeError(
+											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+											{
+												cause: err,
+											},
+										)
+									: err;
 							}
 						},
 					},
@@ -297,12 +301,16 @@ export class ZodConfigurableModuleBuilder<
 						useFactory: async (...args) => {
 							const finalOptions = await options.useFactory!(...args);
 							try {
-								return await self.schema.parseAsync(finalOptions);
+								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
-								if (err instanceof ZodError) {
-									throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
-								}
-								throw err;
+								throw err instanceof $ZodError
+									? new TypeError(
+											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+											{
+												cause: err,
+											},
+										)
+									: err;
 							}
 						},
 						inject: options.inject || [],
@@ -320,12 +328,14 @@ export class ZodConfigurableModuleBuilder<
 						const finalOptions =
 							await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]();
 						try {
-							return await self.schema.parseAsync(finalOptions);
+							return await parseAsync(self.schema, finalOptions);
 						} catch (err) {
-							if (err instanceof ZodError) {
-								throw zodErrorToTypeError(err, self.schema, this.name, new Map(), false);
-							}
-							throw err;
+							throw err instanceof $ZodError
+								? new TypeError(
+										`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+										{ cause: err },
+									)
+								: err;
 						}
 					},
 					inject: [options.useExisting || options.useClass!],

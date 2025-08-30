@@ -3,19 +3,16 @@ import { ConfigModule, ConfigService, type ConfigType } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { type NamespacedConfigType, registerConfig } from "@proventuslabs/nestjs-zod";
 
-import z from "zod";
+import z from "zod/v4";
 
 const appConfig = registerConfig(
 	"app",
 	z.object({
-		port: z
-			.number()
-			.int()
-			.min(0)
-			.max(65535)
-			.default(9558)
-			.describe("The local HTTP port to bind the server to"),
+		port: z.number().int().min(0).max(65535).describe("The local HTTP port to bind the server to"),
 	}),
+	{
+		variables: { APP_PORT: "abc" },
+	},
 );
 
 type AppConfig = ConfigType<typeof appConfig>;

@@ -24,7 +24,7 @@ This package requires the following peer dependencies:
 
 - `@nestjs/common` ^10.0.0 || ^11.0.0
 - `@nestjs/config` ^3.0.0 || ^4.0.0
-- `zod` ^3.0.0
+- `zod` ^3.25.0 || ^4.0.0
 
 ## Quick Start
 

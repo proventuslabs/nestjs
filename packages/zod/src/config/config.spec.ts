@@ -1,7 +1,7 @@
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { registerConfig } from "./config";
 

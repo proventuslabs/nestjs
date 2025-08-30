@@ -2,8 +2,8 @@ import fs from "node:fs";
 
 import {
 	camelCase,
+	flatMap,
 	get,
-	head,
 	isEmpty,
 	isObjectLike,
 	isString,
@@ -12,11 +12,10 @@ import {
 	reduce,
 	set,
 	snakeCase,
-	tail,
 } from "lodash";
 import type { JsonValue } from "type-fest";
 import yaml from "yaml";
-import { ZodEffects, ZodObject, ZodTransformer, type ZodTypeAny, type z } from "zod";
+import { type $ZodError, type $ZodType, toDotPath, toJSONSchema } from "zod/v4/core";
 
 /**
  * Raw content of the config file as UTF-8.
@@ -25,7 +24,6 @@ let cachedConfigFileContent: string | undefined;
 /**
  * Parsed YAML file - unknown as we don't know what shape it will have until we validate it.
  */
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 let parsedConfigFileContent: unknown | undefined;
 
 /**
@@ -82,7 +80,6 @@ export function decodeConfig(content?: string, file?: string) {
 	if (!isObjectLike(readConfig))
 		throw new Error(`Config file provided must contain the JSON configuration object`);
 
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	return readConfig as Record<string, JsonValue>;
 }
 
@@ -109,9 +106,8 @@ function nestedConventionNamespaced(envKey: string, envNamespace: string): strin
  * @param value - The string value to parse as JSON
  * @returns The parsed JSON value or the original string if parsing fails
  */
-function jsonify(value: string | undefined): JsonValue | undefined {
+function jsonParse(value: string | undefined): JsonValue | undefined {
 	try {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		return JSON.parse(value ?? "") as JsonValue;
 	} catch {
 		return value;
@@ -151,7 +147,8 @@ function jsonify(value: string | undefined): JsonValue | undefined {
 export function decodeVariables(
 	variables: Record<string, string | undefined>,
 	namespace: string,
-	whitelistKeys: Set<string> = new Set(),
+	whitelistKeys: Set<string | number | symbol> = new Set(),
+	jsonify: (value: string | undefined) => JsonValue | undefined = jsonParse,
 ): readonly [Record<string, JsonValue | undefined>, Map<string, string>] {
 	const envKeys = new Map<string, string>();
 	const envNamespace = snakeCase(namespace).toUpperCase();
@@ -176,98 +173,62 @@ export function decodeVariables(
 }
 
 /**
- * Recursively navigates through a Zod schema to find description metadata at a specific path.
- * Handles various Zod schema types including effects, transformers, and objects.
+ * Converts a Zod validation error into a formatted TypeError with enhanced context.
  *
- * @param path - Array of string keys representing the path in the schema
- * @param schema - The Zod schema to search through
- * @returns The description string if found, otherwise undefined
- */
-function findDescriptionInSchemaByPath(path: string[], schema: ZodTypeAny) {
-	// we have to work with ZodTypeAny to accept anything, so we disable the unsafe argument check
-	if (isEmpty(path)) return schema?.description;
-	else if (schema instanceof ZodEffects)
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-		return findDescriptionInSchemaByPath(path, schema.innerType());
-	else if (schema instanceof ZodTransformer)
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-		return findDescriptionInSchemaByPath(path, schema.innerType());
-	else if (schema instanceof ZodObject)
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-		return findDescriptionInSchemaByPath(tail(path), get(schema.shape, head(path) ?? ""));
-	else return schema?.description;
-}
-
-/**
- * Converts Zod validation errors into a more descriptive TypeError.
- * Enhances error messages with schema descriptions when available.
+ * This function takes a Zod schema and a ZodError, then formats each validation issue
+ * by including its path, any matching JSON Schema description, and optionally
+ * mapping environment variable keys. The resulting error is a `TypeError` with
+ * the original ZodError set as its `cause`.
  *
- * @param error - The Zod error containing validation issues
- * @param schema - The namespaced schema that was used for validation
- * @param namespace - The configuration namespace for context in error messages
- * @param keys - Map of path strings to user-friendly key names for better error reporting
- * @returns A TypeError with formatted error messages for each validation issue
+ * @param schema - The Zod schema that was used to validate the data.
+ * @param error - The Zod validation error to format.
+ * @param context - The context in which the error occurred, used in the error message prefix.
+ * @param namespace - A namespace or identifier to include in the error message.
+ * @param envKeys - Optional mapping from dot-notation paths to environment variable names.
+ *
+ * @returns {TypeError} A TypeError containing a formatted error message for all
+ *   validation issues, with the original ZodError as its `cause`.
+ *
+ * @example
+ * const schema = z.object({ foo: z.string() });
+ * const result = schema.safeParse({ foo: 123 });
+ * if (!result.success) {
+ *   throw typifyError(schema, result.error, "config", "MyApp");
+ * }
  */
-export function zodErrorToTypeError(
-	error: z.ZodError,
-	schema: ZodTypeAny,
+export const typifyError = <S extends $ZodType>(
+	schema: S,
+	error: $ZodError,
 	namespace: string,
-	keys: Map<string, string>,
-	isSchemaNamespaced: boolean = true,
-) {
-	const errorMessages = error.issues.map((err) => {
-		const pathNotation = err.path.join(".");
-		const path = keys.get(pathNotation) ?? pathNotation;
-		const message = err.message;
-		const description = findDescriptionInSchemaByPath(
-			err.path.map((v) => v.toString()),
-			schema,
-		);
+	envKeys: Map<string, string> = new Map(),
+	jsonSchemaOptions: Parameters<typeof toJSONSchema>[1] = { unrepresentable: "any" },
+): string => {
+	// NOTE: shamelessy copied from `prettifyError`
+	const lines: string[] = [];
+	const jsonSchema = toJSONSchema(schema, jsonSchemaOptions);
 
-		return { path, message, description };
-	});
+	// sort by path length
+	const issues = [...error.issues].sort((a, b) => (a.path ?? []).length - (b.path ?? []).length);
 
-	return new ZodConfigError(
-		{
-			name: namespace,
-			description: findDescriptionInSchemaByPath(isSchemaNamespaced ? [namespace] : [], schema),
-		},
-		errorMessages,
-	);
-}
+	// process each issue
+	for (const issue of issues) {
+		lines.push(`✖ ${issue.message}`);
+		if (issue.path?.length) {
+			// walk through the json schema for the "description" property
+			const jsonSchemafullPath = flatMap(issue.path, (p) => ["properties", p]);
+			jsonSchemafullPath.push("description");
+			const descriptionValue = get(jsonSchema, toDotPath(jsonSchemafullPath));
+			const description = isString(descriptionValue) ? `: ${descriptionValue}` : "";
 
-/**
- * Simple error wrapper for expressing an invalid config from a zod schema.
- */
-export class ZodConfigError extends TypeError {
-	public constructor(
-		public readonly namespace: {
-			name: string;
-			description: string | undefined;
-		},
-		public readonly configErrors: readonly {
-			path: string;
-			message: string;
-			description: string | undefined;
-		}[],
-		options?: ErrorOptions,
-	) {
-		const spacing = "    ";
-		const title = `Invalid config for "${namespace.name}":\n`;
-		const description = isUndefined(namespace.description)
-			? ""
-			: `${spacing}${namespace.description}\n`;
-		const errors = configErrors.map((v) => ZodConfigError.mapError(v, spacing)).join("\n");
+			// use the env key or the path (prefixed with the namespace to have in the error formatting the namespace name too)
+			// (e.g. instead of -> at port: ... you get -> at app.port: ... so you don't have to see the header for the namespace name)
+			const issuePath = isEmpty(namespace) ? issue.path : [namespace.toLowerCase(), ...issue.path];
+			const path = toDotPath(issuePath);
+			const via = envKeys.get(path) ? ` via ${envKeys.get(path)}` : "";
 
-		super(title + description + errors, options);
+			lines.push(`  → at ${path}${via}${description}`);
+		}
 	}
 
-	private static mapError(
-		error: { path: string; message: string; description: string | undefined },
-		spacing: string,
-	) {
-		let message = `${spacing}- ${error.path}: ${error.message}`;
-		message += isUndefined(error.description) ? "" : `\n${spacing}${error.description}`;
-		return message;
-	}
-}
+	return lines.join("\n");
+};

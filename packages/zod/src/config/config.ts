@@ -4,9 +4,9 @@ import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from
 
 import { merge } from "lodash";
 import type { CamelCase, JsonValue } from "type-fest";
-import { type ZodType, type ZodTypeDef, z } from "zod";
+import { type $ZodType, safeParseAsync } from "zod/v4/core";
 
-import { decodeConfig, decodeVariables, zodErrorToTypeError } from "../internal";
+import { decodeConfig, decodeVariables, typifyError } from "../internal";
 
 /**
  * Simple type alias for config namespace.
@@ -64,9 +64,13 @@ export type NamespacedConfigType<
  * export type AppConfigNamespaced = NamespacedConfigType<typeof appConfig>;
  * export type AppConfig = ConfigType<typeof appConfig>;
  */
-export function registerConfig<N extends string, C extends ConfigObject, I extends JsonValue>(
+export function registerConfig<
+	N extends string,
+	C extends ConfigObject,
+	I extends JsonValue | unknown,
+>(
 	namespace: ConfigNamespace<N>,
-	configSchema: ZodType<C, ZodTypeDef, I>,
+	configSchema: $ZodType<C, I>,
 	options: {
 		whitelistKeys?: Set<string>;
 		variables?: Record<string, string | undefined>;
@@ -78,15 +82,16 @@ export function registerConfig<N extends string, C extends ConfigObject, I exten
 		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
 		const decodedConfig = decodeConfig(variables.CONFIG_CONTENT, variables.CONFIG_FILE);
 
-		const namespacedSchema = z.object({
-			[namespace]: configSchema,
-		});
-		const parsedConfig = await namespacedSchema.safeParseAsync(
-			merge({ [namespace]: {} }, decodedConfig, decodedEnv),
+		const parsedConfig = await safeParseAsync(
+			configSchema,
+			merge({}, decodedConfig[namespace], decodedEnv[namespace]),
 		);
 		if (!parsedConfig.success)
-			throw zodErrorToTypeError(parsedConfig.error, namespacedSchema, namespace, envKeys);
-		const config: C = parsedConfig.data[namespace];
+			throw new TypeError(
+				`Invalid config for "${namespace}":\n${typifyError(configSchema, parsedConfig.error, namespace, envKeys)}`,
+				{ cause: parsedConfig.error },
+			);
+		const config = parsedConfig.data;
 
 		return config;
 	}) as ReturnType<typeof registerAs<C>> & { NAMESPACE: N };
