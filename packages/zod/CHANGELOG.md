@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v1.1.1...nestjs-zod@v1.2.0) (2025-08-30)
+
+
+### Features
+
+* **zod:** migrate to v4 ([#22](https://github.com/proventuslabs/nestjs/issues/22)) ([593b237](https://github.com/proventuslabs/nestjs/commit/593b2370dce75515c50656dc55346b66a3efe43f))
+
 ## [1.1.1](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v1.1.0...nestjs-zod@v1.1.1) (2025-08-19)
 
 

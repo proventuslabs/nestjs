@@ -1,4 +1,4 @@
 {
-  "packages/zod": "1.1.1",
+  "packages/zod": "1.2.0",
   "packages/multipart-form": "1.0.0-alpha.1"
 }
