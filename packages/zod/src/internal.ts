@@ -220,8 +220,10 @@ export const typifyError = <S extends $ZodType>(
 			const descriptionValue = get(jsonSchema, toDotPath(jsonSchemafullPath));
 			const description = isString(descriptionValue) ? `: ${descriptionValue}` : "";
 
-			// use the env key or the path
-			const path = toDotPath(issue.path);
+			// use the env key or the path (prefixed with the namespace to have in the error formatting the namespace name too)
+			// (e.g. instead of -> at port: ... you get -> at app.port: ... so you don't have to see the header for the namespace name)
+			const issuePath = [namespace.toLowerCase(), ...issue.path];
+			const path = toDotPath(issuePath);
 			const via = envKeys.get(path) ? ` via ${envKeys.get(path)}` : "";
 
 			lines.push(`  → at ${path}${via}${description}`);

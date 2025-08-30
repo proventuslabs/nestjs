@@ -4,8 +4,7 @@ import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from
 
 import { merge } from "lodash";
 import type { CamelCase, JsonValue } from "type-fest";
-import z from "zod/v4";
-import type { $ZodType } from "zod/v4/core";
+import { type $ZodType, safeParseAsync } from "zod/v4/core";
 
 import { decodeConfig, decodeVariables, typifyError } from "../internal";
 
@@ -83,18 +82,16 @@ export function registerConfig<
 		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
 		const decodedConfig = decodeConfig(variables.CONFIG_CONTENT, variables.CONFIG_FILE);
 
-		const namespacedSchema = z.object({
-			[namespace]: configSchema,
-		});
-		const parsedConfig = await namespacedSchema.safeParseAsync(
-			merge({ [namespace]: {} }, decodedConfig, decodedEnv),
+		const parsedConfig = await safeParseAsync(
+			configSchema,
+			merge({}, decodedConfig[namespace], decodedEnv[namespace]),
 		);
 		if (!parsedConfig.success)
 			throw new TypeError(
-				typifyError(namespacedSchema, parsedConfig.error, "config", namespace, envKeys),
+				typifyError(configSchema, parsedConfig.error, "config", namespace, envKeys),
 				{ cause: parsedConfig.error },
 			);
-		const config = parsedConfig.data[namespace];
+		const config = parsedConfig.data;
 
 		return config;
 	}) as ReturnType<typeof registerAs<C>> & { NAMESPACE: N };
