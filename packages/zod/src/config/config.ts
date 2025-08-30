@@ -88,7 +88,7 @@ export function registerConfig<
 		);
 		if (!parsedConfig.success)
 			throw new TypeError(
-				typifyError(configSchema, parsedConfig.error, "config", namespace, envKeys),
+				`Invalid config for "${namespace}":\n${typifyError(configSchema, parsedConfig.error, namespace, envKeys)}`,
 				{ cause: parsedConfig.error },
 			);
 		const config = parsedConfig.data;

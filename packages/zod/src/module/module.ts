@@ -199,9 +199,12 @@ export class ZodConfigurableModuleBuilder<
 								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
 								throw err instanceof $ZodError
-									? new TypeError(typifyError(self.schema, err, "options", this.name), {
-											cause: err,
-										})
+									? new TypeError(
+											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+											{
+												cause: err,
+											},
+										)
 									: err;
 							}
 						},
@@ -301,9 +304,12 @@ export class ZodConfigurableModuleBuilder<
 								return await parseAsync(self.schema, finalOptions);
 							} catch (err) {
 								throw err instanceof $ZodError
-									? new TypeError(typifyError(self.schema, err, "options", this.name), {
-											cause: err,
-										})
+									? new TypeError(
+											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+											{
+												cause: err,
+											},
+										)
 									: err;
 							}
 						},
@@ -325,7 +331,10 @@ export class ZodConfigurableModuleBuilder<
 							return await parseAsync(self.schema, finalOptions);
 						} catch (err) {
 							throw err instanceof $ZodError
-								? new TypeError(typifyError(self.schema, err, "options", this.name), { cause: err })
+								? new TypeError(
+										`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
+										{ cause: err },
+									)
 								: err;
 						}
 					},

@@ -4,6 +4,7 @@ import {
 	camelCase,
 	flatMap,
 	get,
+	isEmpty,
 	isObjectLike,
 	isString,
 	isUndefined,
@@ -198,7 +199,6 @@ export function decodeVariables(
 export const typifyError = <S extends $ZodType>(
 	schema: S,
 	error: $ZodError,
-	context: "options" | "config",
 	namespace: string,
 	envKeys: Map<string, string> = new Map(),
 	jsonSchemaOptions: Parameters<typeof toJSONSchema>[1] = { unrepresentable: "any" },
@@ -222,7 +222,7 @@ export const typifyError = <S extends $ZodType>(
 
 			// use the env key or the path (prefixed with the namespace to have in the error formatting the namespace name too)
 			// (e.g. instead of -> at port: ... you get -> at app.port: ... so you don't have to see the header for the namespace name)
-			const issuePath = [namespace.toLowerCase(), ...issue.path];
+			const issuePath = isEmpty(namespace) ? issue.path : [namespace.toLowerCase(), ...issue.path];
 			const path = toDotPath(issuePath);
 			const via = envKeys.get(path) ? ` via ${envKeys.get(path)}` : "";
 
@@ -230,5 +230,5 @@ export const typifyError = <S extends $ZodType>(
 		}
 	}
 
-	return `Invalid ${context} for "${namespace}":\n${lines.join("\n")}`;
+	return lines.join("\n");
 };
