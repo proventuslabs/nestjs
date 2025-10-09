@@ -100,21 +100,6 @@ function nestedConventionNamespaced(envKey: string, envNamespace: string): strin
 }
 
 /**
- * Attempts to parse a string value as JSON, falling back to the original string if parsing fails.
- * Used for converting environment variables that might contain JSON values to mimic config file read from ENVs as well.
- *
- * @param value - The string value to parse as JSON
- * @returns The parsed JSON value or the original string if parsing fails
- */
-function jsonParse(value: string | undefined): JsonValue | undefined {
-	try {
-		return JSON.parse(value ?? "") as JsonValue;
-	} catch {
-		return value;
-	}
-}
-
-/**
  * Transforms environment variables from a flat structure with a specific namespace prefix
  * into a nested object structure with camelCase keys, while preserving the original keys
  * for error reporting.
@@ -148,8 +133,7 @@ export function decodeVariables(
 	variables: Record<string, string | undefined>,
 	namespace: string,
 	whitelistKeys: Set<string | number | symbol> = new Set(),
-	jsonify: (value: string | undefined) => JsonValue | undefined = jsonParse,
-): readonly [Record<string, JsonValue | undefined>, Map<string, string>] {
+): readonly [Record<string, string | undefined>, Map<string, string>] {
 	const envKeys = new Map<string, string>();
 	const envNamespace = snakeCase(namespace).toUpperCase();
 	const relevantEnv = pickBy(
@@ -163,10 +147,9 @@ export function decodeVariables(
 
 			const newKey = nestedConventionNamespaced(key, envNamespace);
 			envKeys.set(newKey, key);
-			const newValue = jsonify(value);
-			return set(env, newKey, newValue);
+			return set(env, newKey, value);
 		},
-		{} as Record<string, JsonValue | undefined>,
+		{} as Record<string, string | undefined>,
 	);
 
 	return [decodedEnv, envKeys];
