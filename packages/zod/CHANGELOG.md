@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v1.2.0...nestjs-zod@v2.0.0) (2025-10-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zod:** ENV variables are no longer parsed as JSON values and dropped support for YAML configuration files
+
+### Features
+
+* **zod:** drop YAML files support ([#24](https://github.com/proventuslabs/nestjs/issues/24)) ([1023c42](https://github.com/proventuslabs/nestjs/commit/1023c42084c769dfd0bbf1d5c75c5c800ed30b83))
+
 ## [1.2.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v1.1.1...nestjs-zod@v1.2.0) (2025-08-30)
 
 
