@@ -6,10 +6,9 @@ A collection of NestJS modules to integrate Zod v4 into your application with en
 
 - 🔧 **Zod-powered Configuration**: Type-safe configuration management using Zod schemas (v4)
 - 🌍 **Environment Variable Support**: Automatic parsing and validation of environment variables
-- 📁 **Configuration Files**: Support for YAML configuration files
 - 🏗️ **Configurable Modules**: Enhanced NestJS configurable modules with Zod validation
 - 🎯 **Type Safety**: Full TypeScript support with automatic type inference
-- 🔄 **Merge Strategy**: Environment variables override configuration file values
+- 🔄 **Merge Strategy**: Environment variables override schema defaults
 - 📝 **Descriptive Errors**: Enhanced error messages with schema descriptions
 
 ## 📦 Installation
@@ -79,9 +78,9 @@ export class AppService {
 
 ## 🔧 Configuration and Options
 
-It comes out of the box with the support for env variables and yaml files.
+It comes out of the box with the support for env variables.
 
-Priority order: **Environment Variables** > **YAML Files** > **Schema Defaults**
+Priority order: **Environment Variables** > **Schema Defaults**
 
 ### Environment Variables
 
@@ -97,15 +96,6 @@ APP_DATABASE__HOST=localhost
 APP_DATABASE__PORT=5432
 ```
 
-### Configuration Files
-
-Support for YAML files via environment variables:
-
-```bash
-CONFIG_FILE=./config/app.yaml  # Load from file
-CONFIG_CONTENT="..."           # Inline YAML content
-```
-
 ### Schema defaults
 
 ```typescript
@@ -114,8 +104,8 @@ const dbConfig = registerConfig(
   "database",
   z.object({
     host: z.string().default("localhost"),
-    port: z.number().default(5432),
-    ssl: z.boolean().default(false),
+    port: z.coerce.number().default(5432),
+    ssl: z.coerce.boolean().default(false),
   })
 );
 ```
