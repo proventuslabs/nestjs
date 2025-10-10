@@ -2,11 +2,10 @@ import process from "node:process";
 
 import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from "@nestjs/config";
 
-import { merge } from "lodash";
 import type { CamelCase, JsonValue } from "type-fest";
 import { type $ZodType, safeParseAsync } from "zod/v4/core";
 
-import { decodeConfig, decodeVariables, typifyError } from "../internal";
+import { decodeVariables, typifyError } from "../internal";
 
 /**
  * Simple type alias for config namespace.
@@ -41,12 +40,6 @@ export type NamespacedConfigType<
 /**
  * Registers a config with the `ConfigModule.forFeature` for partial configuration under the provided namespace.
  *
- * This function handles configuration by validating and merging values from multiple sources:
- * - **Environment Variables:** Reads environment variables as JSON values, using the namespace prefix and validating them against the provided schema.
- * - **Configuration File:** Optionally reads configuration from a file or inline YAML content, specified by the `CONFIG_FILE` or `CONFIG_CONTENT` environment variables respectively.
- *
- * **Merge order is Config File < Enviornment Variables** thus enviornment variables _override_ whatever the config sets.
- *
  * @param namespace - The namespace of the config
  * @param configSchema - The schema of the config
  * @param whitelistKeys - Set of keys to be whitelisted and get passed to the schema as-is
@@ -80,12 +73,8 @@ export function registerConfig<
 
 	const service = registerAs(namespace, async () => {
 		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
-		const decodedConfig = decodeConfig(variables.CONFIG_CONTENT, variables.CONFIG_FILE);
 
-		const parsedConfig = await safeParseAsync(
-			configSchema,
-			merge({}, decodedConfig[namespace], decodedEnv[namespace]),
-		);
+		const parsedConfig = await safeParseAsync(configSchema, decodedEnv[namespace] ?? {});
 		if (!parsedConfig.success)
 			throw new TypeError(
 				`Invalid config for "${namespace}":\n${typifyError(configSchema, parsedConfig.error, namespace, envKeys)}`,

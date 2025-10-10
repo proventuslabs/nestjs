@@ -16,10 +16,9 @@ A collection of NestJS modules to integrate Zod v4 into your application with en
 
 - 🔧 **Zod-powered Configuration**: Type-safe configuration management using Zod v4 schemas
 - 🌍 **Environment Variable Support**: Automatic parsing and validation of environment variables
-- 📁 **Configuration Files**: Support for YAML configuration files
 - 🏗️ **Configurable Modules**: Enhanced NestJS configurable modules with Zod validation
 - 🎯 **Type Safety**: Full TypeScript support with automatic type inference
-- 🔄 **Merge Strategy**: Environment variables override configuration file values
+- 🔄 **Merge Strategy**: Environment variables override schema defaults
 - 📝 **Descriptive Errors**: Enhanced error messages with schema descriptions
 - 🔒 **Whitelist Support**: Allow specific environment variables to bypass namespace restrictions
 

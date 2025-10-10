@@ -1,87 +1,5 @@
-import fs from "node:fs";
-
-import {
-	camelCase,
-	flatMap,
-	get,
-	isEmpty,
-	isObjectLike,
-	isString,
-	isUndefined,
-	pickBy,
-	reduce,
-	set,
-	snakeCase,
-} from "lodash";
-import type { JsonValue } from "type-fest";
-import yaml from "yaml";
+import { camelCase, flatMap, get, isEmpty, isString, pickBy, reduce, set, snakeCase } from "lodash";
 import { type $ZodError, type $ZodType, toDotPath, toJSONSchema } from "zod/v4/core";
-
-/**
- * Raw content of the config file as UTF-8.
- */
-let cachedConfigFileContent: string | undefined;
-/**
- * Parsed YAML file - unknown as we don't know what shape it will have until we validate it.
- */
-let parsedConfigFileContent: unknown | undefined;
-
-/**
- * Parses a string content into a JavaScript object using YAML parser.
- * Uses a cached result if the content has been parsed before.
- *
- * @param content - The string content in YAML format to parse
- * @returns The parsed JavaScript object representation of the YAML content
- */
-function parseConfig(content: string): unknown {
-	if (!isUndefined(parsedConfigFileContent)) return parsedConfigFileContent;
-
-	parsedConfigFileContent = yaml.parse(content);
-	return parsedConfigFileContent;
-}
-
-/**
- * Reads and parses a configuration file from the filesystem.
- * Uses cached file content if available to prevent multiple filesystem reads.
- *
- * @param path - The path to the configuration file
- * @returns The parsed JavaScript object representation of the file
- * @throws {Error} if the file cannot be read or parsed
- */
-function parseConfigFile(path: string) {
-	try {
-		if (!isString(cachedConfigFileContent))
-			cachedConfigFileContent = fs.readFileSync(path).toString("utf8");
-
-		return parseConfig(cachedConfigFileContent);
-	} catch (err) {
-		const message = err instanceof Error ? err.message : new String(err).toString();
-		throw new Error(`Unable to open the config file provided: ${message}`, {
-			cause: err,
-		});
-	}
-}
-
-/**
- * Reads configuration from either a string content or a file path.
- * String content takes precedence over file path to avoid unnecessary filesystem operations.
- *
- * @param content - Optional string content in YAML format
- * @param file - Optional path to a configuration file
- * @returns The parsed configuration as a record of string keys to JSON values
- * @throws {Error} if neither content nor file contains a valid configuration object
- */
-export function decodeConfig(content?: string, file?: string) {
-	let readConfig: unknown = {};
-	// NOTE: `content` takes precedence over a `file` (to avoid a file system read in case of both)
-	if (isString(content)) readConfig = parseConfig(content);
-	else if (isString(file)) readConfig = parseConfigFile(file);
-
-	if (!isObjectLike(readConfig))
-		throw new Error(`Config file provided must contain the JSON configuration object`);
-
-	return readConfig as Record<string, JsonValue>;
-}
 
 /**
  * Transforms environment variable keys into nested object notation starting from the provided namespace.
@@ -97,21 +15,6 @@ function nestedConventionNamespaced(envKey: string, envNamespace: string): strin
 		.toLowerCase()
 		.replace(/__/g, ".")
 		.replace(/[a-z_]+/g, (word) => camelCase(word));
-}
-
-/**
- * Attempts to parse a string value as JSON, falling back to the original string if parsing fails.
- * Used for converting environment variables that might contain JSON values to mimic config file read from ENVs as well.
- *
- * @param value - The string value to parse as JSON
- * @returns The parsed JSON value or the original string if parsing fails
- */
-function jsonParse(value: string | undefined): JsonValue | undefined {
-	try {
-		return JSON.parse(value ?? "") as JsonValue;
-	} catch {
-		return value;
-	}
 }
 
 /**
@@ -148,8 +51,7 @@ export function decodeVariables(
 	variables: Record<string, string | undefined>,
 	namespace: string,
 	whitelistKeys: Set<string | number | symbol> = new Set(),
-	jsonify: (value: string | undefined) => JsonValue | undefined = jsonParse,
-): readonly [Record<string, JsonValue | undefined>, Map<string, string>] {
+): readonly [Record<string, string | undefined>, Map<string, string>] {
 	const envKeys = new Map<string, string>();
 	const envNamespace = snakeCase(namespace).toUpperCase();
 	const relevantEnv = pickBy(
@@ -163,10 +65,9 @@ export function decodeVariables(
 
 			const newKey = nestedConventionNamespaced(key, envNamespace);
 			envKeys.set(newKey, key);
-			const newValue = jsonify(value);
-			return set(env, newKey, newValue);
+			return set(env, newKey, value);
 		},
-		{} as Record<string, JsonValue | undefined>,
+		{} as Record<string, string | undefined>,
 	);
 
 	return [decodedEnv, envKeys];

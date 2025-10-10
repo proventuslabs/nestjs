@@ -38,8 +38,7 @@
 		"test:coverage:watch": "jest --coverage --watch"
 	},
 	"dependencies": {
-		"lodash": "^4.17.21",
-		"yaml": "^2.8.0"
+		"lodash": "^4.17.21"
 	},
 	"peerDependencies": {
 		"@nestjs/common": "^10.0.0 || ^11.0.0",
