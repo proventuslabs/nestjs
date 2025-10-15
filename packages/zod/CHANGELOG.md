@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v2.0.0...nestjs-zod@v2.0.1) (2025-10-15)
+
+
+### Bug Fixes
+
+* **zod:** use correct input types for schema ([#26](https://github.com/proventuslabs/nestjs/issues/26)) ([935ac75](https://github.com/proventuslabs/nestjs/commit/935ac75e149d80f29fa9d3c7659e6e994ae38499))
+
 ## [2.0.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v1.2.0...nestjs-zod@v2.0.0) (2025-10-10)
 
 
