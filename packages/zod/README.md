@@ -38,7 +38,7 @@ import { z } from "zod";
 const appConfig = registerConfig(
   "app",
   z.object({
-    port: z.number().default(3000).describe("Server port"),
+    port: z.coerce.number<string | undefined>().default(3000).describe("Server port"),
     host: z.string().default("localhost").describe("Server host"),
     apiKey: z.string().describe("API key for external services"),
   }),
@@ -104,8 +104,8 @@ const dbConfig = registerConfig(
   "database",
   z.object({
     host: z.string().default("localhost"),
-    port: z.coerce.number().default(5432),
-    ssl: z.coerce.boolean().default(false),
+    port: z.coerce.number<string | undefined>().default(5432),
+    ssl: z.coerce.boolean<string | undefined>().default(false),
   })
 );
 ```
@@ -125,6 +125,7 @@ registerConfig(namespace, zodSchema, options?)
 - `namespace`: Configuration namespace (camelCase)
 - `zodSchema`: Zod schema for validation
 - `options.whitelistKeys`: Environment variables to allow without namespace prefix
+- `options.variables`: Environment variables to use (defaults `process.env`)
 
 #### Whitelist Keys
 
@@ -134,7 +135,7 @@ By default, only environment variables with the namespace prefix are processed. 
 const appConfig = registerConfig(
   "app",
   z.object({
-    port: z.number().default(3000),
+    port: z.coerce.number<string | undefined>().default(3000),
     apiKey: z.string().describe("API key from environment"),
   }),
   {
@@ -161,7 +162,7 @@ const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
   new ZodConfigurableModuleBuilder(
     z.object({
       apiKey: z.string(),
-      baseUrl: z.string().url().default("https://api.example.com"),
+      baseUrl: z.url().default("https://api.example.com"),
       timeout: z.number().default(5000),
     })
   ).build();
@@ -223,7 +224,7 @@ constructor(
 const appConfig = registerConfig(
   "app",
   z.object({
-    port: z.number().default(3000).describe("HTTP server port"),
+    port: z.coerce.number<string | undefined>().default(3000).describe("HTTP server port"),
     apiKey: z.string().describe("Third-party API authentication key"),
   }),
   { whitelistKeys: new Set(["API_KEY"]) }
