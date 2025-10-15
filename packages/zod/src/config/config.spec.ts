@@ -23,7 +23,7 @@ describe("config", () => {
 			"app",
 			z.object({
 				port: z.coerce
-					.number()
+					.number<string | undefined>()
 					.positive()
 					.min(0)
 					.max(65535)

@@ -2,7 +2,7 @@ import process from "node:process";
 
 import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from "@nestjs/config";
 
-import type { CamelCase, JsonValue } from "type-fest";
+import type { CamelCase } from "type-fest";
 import { type $ZodType, safeParseAsync } from "zod/v4/core";
 
 import { decodeVariables, typifyError } from "../internal";
@@ -60,7 +60,7 @@ export type NamespacedConfigType<
 export function registerConfig<
 	N extends string,
 	C extends ConfigObject,
-	I extends JsonValue | unknown,
+	I extends Record<string, string | undefined>,
 >(
 	namespace: ConfigNamespace<N>,
 	configSchema: $ZodType<C, I>,
