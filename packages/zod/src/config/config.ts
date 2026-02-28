@@ -1,5 +1,6 @@
 import process from "node:process";
 
+import { Logger } from "@nestjs/common";
 import { type ConfigObject, type ConfigType as NestConfigType, registerAs } from "@nestjs/config";
 
 import type { CamelCase } from "type-fest";
@@ -67,19 +68,24 @@ export function registerConfig<
 	options: {
 		whitelistKeys?: Set<string>;
 		variables?: Record<string, string | undefined>;
+		warnOnly?: boolean;
 	} = {},
 ) {
-	const { variables = process.env, whitelistKeys } = options;
+	const { variables = process.env, whitelistKeys, warnOnly } = options;
 
 	const service = registerAs(namespace, async () => {
 		const [decodedEnv, envKeys] = decodeVariables(variables, namespace, whitelistKeys);
 
-		const parsedConfig = await safeParseAsync(configSchema, decodedEnv[namespace] ?? {});
-		if (!parsedConfig.success)
-			throw new TypeError(
-				`Invalid config for "${namespace}":\n${typifyError(configSchema, parsedConfig.error, namespace, envKeys)}`,
-				{ cause: parsedConfig.error },
-			);
+		const rawInput = decodedEnv[namespace] ?? {};
+		const parsedConfig = await safeParseAsync(configSchema, rawInput);
+		if (!parsedConfig.success) {
+			const message = `Invalid config for "${namespace}":\n${typifyError(configSchema, parsedConfig.error, namespace, envKeys)}`;
+			if (warnOnly) {
+				new Logger(`registerConfig(${namespace})`).warn(message);
+				return rawInput as C;
+			}
+			throw new TypeError(message, { cause: parsedConfig.error });
+		}
 		const config = parsedConfig.data;
 
 		return config;

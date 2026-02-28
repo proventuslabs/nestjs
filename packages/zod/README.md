@@ -126,6 +126,7 @@ registerConfig(namespace, zodSchema, options?)
 - `zodSchema`: Zod schema for validation
 - `options.whitelistKeys`: Environment variables to allow without namespace prefix
 - `options.variables`: Environment variables to use (defaults `process.env`)
+- `options.warnOnly`: When `true`, validation failures log a warning instead of throwing, and raw values pass through unchanged
 
 #### Whitelist Keys
 
@@ -164,7 +165,8 @@ const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
       apiKey: z.string(),
       baseUrl: z.url().default("https://api.example.com"),
       timeout: z.number().default(5000),
-    })
+    }),
+    { warnOnly: true } // optional: log warnings instead of throwing on validation failure
   ).build();
 
 @Module({

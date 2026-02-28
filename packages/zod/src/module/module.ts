@@ -26,6 +26,10 @@ import {
 	randomStringGenerator,
 } from "./utils";
 
+export interface ZodConfigurableModuleBuilderOptions extends ConfigurableModuleBuilderOptions {
+	warnOnly?: boolean;
+}
+
 export class ZodConfigurableModuleBuilder<
 	ModuleOptions,
 	ModuleOptionsInput,
@@ -45,7 +49,7 @@ export class ZodConfigurableModuleBuilder<
 
 	public constructor(
 		protected readonly schema: $ZodType<ModuleOptions, ModuleOptionsInput>,
-		protected readonly options: ConfigurableModuleBuilderOptions = {},
+		protected readonly options: ZodConfigurableModuleBuilderOptions = {},
 		parentBuilder?: ZodConfigurableModuleBuilder<ModuleOptions, ModuleOptionsInput>,
 	) {
 		if (parentBuilder) {
@@ -167,6 +171,22 @@ export class ZodConfigurableModuleBuilder<
 		};
 	}
 
+	private async validateOptions(finalOptions: unknown, moduleName: string): Promise<ModuleOptions> {
+		try {
+			return await parseAsync(this.schema, finalOptions);
+		} catch (err) {
+			if (err instanceof $ZodError) {
+				const message = `Invalid options for "${moduleName}":\n${typifyError(this.schema, err, moduleName)}`;
+				if (this.options.warnOnly) {
+					this.logger.warn(message);
+					return finalOptions as ModuleOptions;
+				}
+				throw new TypeError(message, { cause: err });
+			}
+			throw err;
+		}
+	}
+
 	private constructInjectionTokenString(): string {
 		const moduleNameInSnakeCase = this.options
 			.moduleName!.trim()
@@ -195,18 +215,7 @@ export class ZodConfigurableModuleBuilder<
 						// NOTE: instead of useValue: this.omitExtras(options, self.extras),
 						useFactory: async () => {
 							const finalOptions = this.omitExtras(options, self.extras);
-							try {
-								return await parseAsync(self.schema, finalOptions);
-							} catch (err) {
-								throw err instanceof $ZodError
-									? new TypeError(
-											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
-											{
-												cause: err,
-											},
-										)
-									: err;
-							}
+							return self.validateOptions(finalOptions, this.name);
 						},
 					},
 				];
@@ -300,18 +309,7 @@ export class ZodConfigurableModuleBuilder<
 						// NOTE: instead of useFactory: options.useFactory,
 						useFactory: async (...args) => {
 							const finalOptions = await options.useFactory!(...args);
-							try {
-								return await parseAsync(self.schema, finalOptions);
-							} catch (err) {
-								throw err instanceof $ZodError
-									? new TypeError(
-											`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
-											{
-												cause: err,
-											},
-										)
-									: err;
-							}
+							return self.validateOptions(finalOptions, this.name);
 						},
 						inject: options.inject || [],
 					};
@@ -327,16 +325,7 @@ export class ZodConfigurableModuleBuilder<
 					) => {
 						const finalOptions =
 							await optionsFactory[self.factoryClassMethodKey as keyof typeof optionsFactory]();
-						try {
-							return await parseAsync(self.schema, finalOptions);
-						} catch (err) {
-							throw err instanceof $ZodError
-								? new TypeError(
-										`Invalid options for "${this.name}":\n${typifyError(self.schema, err, this.name)}`,
-										{ cause: err },
-									)
-								: err;
-						}
+						return self.validateOptions(finalOptions, this.name);
 					},
 					inject: [options.useExisting || options.useClass!],
 				};
