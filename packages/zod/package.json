@@ -1,6 +1,6 @@
 {
 	"name": "@proventuslabs/nestjs-zod",
-	"version": "2.0.1",
+	"version": "2.1.0",
 	"license": "MIT",
 	"description": "A collection of NestJS modules to integrate Zod into your application.",
 	"keywords": [

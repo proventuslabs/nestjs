@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v2.0.1...nestjs-zod@v2.1.0) (2026-02-28)
+
+
+### Features
+
+* **zod:** add `warnOnly` option ([#29](https://github.com/proventuslabs/nestjs/issues/29)) ([a10540a](https://github.com/proventuslabs/nestjs/commit/a10540ac8c444834c282f520668edc7584040bfc))
+
 ## [2.0.1](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v2.0.0...nestjs-zod@v2.0.1) (2025-10-15)
 
 
