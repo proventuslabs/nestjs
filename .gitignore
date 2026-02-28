@@ -15,8 +15,8 @@
 !biome.json
 !tsconfig.json
 !tsconfig.build.json
-!mise.toml
 !jest.config.cjs
+!flake.*
 
 # Documentation
 !LICENSE
