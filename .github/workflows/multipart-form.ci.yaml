@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   call-package-ci:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     name: Run CI
     uses: ./.github/workflows/-template-package.ci.yaml
     with:

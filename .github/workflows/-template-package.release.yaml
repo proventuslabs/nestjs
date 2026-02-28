@@ -13,17 +13,15 @@ on:
         description: "The release tag name for the package"
         required: true
         type: string
-    secrets:
-      NPM_TOKEN:
-        required: true
 
 jobs:
   build-and-upload:
-    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: "npm"
@@ -53,12 +51,16 @@ jobs:
         run: gh release upload ${{ inputs.package_tag_name }} ${{ inputs.package_name }}-build.zip
 
   publish-npm:
-    runs-on: ubuntu-latest
-    needs: build-and-upload # Ensure publish only runs after build and upload
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    needs: build-and-upload
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: "npm"
@@ -74,9 +76,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-20-npm-
 
-      - run: npm ci # Re-install dependencies for publish job
+      - run: npm ci
 
       - name: Publish ${{ inputs.package_npm_workspace }} to npm
-        run: npm publish --workspace=${{ inputs.package_npm_workspace }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --workspace=${{ inputs.package_npm_workspace }} --provenance --access public

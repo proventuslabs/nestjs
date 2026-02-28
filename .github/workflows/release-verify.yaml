@@ -1,0 +1,63 @@
+name: Release Verify
+
+on:
+  pull_request_target:
+    branches: [main]
+
+jobs:
+  detect-release-please:
+    if: startsWith(github.head_ref, 'release-please--')
+    timeout-minutes: 1
+    runs-on: ubuntu-24.04
+    outputs:
+      package_name: ${{ steps.extract.outputs.package_name }}
+      package_npm_workspace: ${{ steps.extract.outputs.package_npm_workspace }}
+
+    steps:
+      - name: Extract package info from branch
+        id: extract
+        run: |
+          # Branch format: release-please--branches--main--components--<package-name>
+          BRANCH="${{ github.head_ref }}"
+          PACKAGE_DIR=$(echo "$BRANCH" | sed 's/.*--components--//')
+
+          echo "package_name=$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
+
+          # Map package directory to npm workspace name
+          echo "package_npm_workspace=@proventuslabs/nestjs-$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
+
+  verify-npm:
+    needs: detect-release-please
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Cache root & workspace node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/${{ needs.detect-release-please.outputs.package_name }}/node_modules
+          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-npm-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build --workspace=${{ needs.detect-release-please.outputs.package_npm_workspace }}
+
+      - name: Verify npm publish
+        run: npm publish --dry-run --workspace=${{ needs.detect-release-please.outputs.package_npm_workspace }}

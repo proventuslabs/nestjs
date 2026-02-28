@@ -4,6 +4,7 @@ on:
       - main
 
 permissions:
+  id-token: write
   contents: write
   pull-requests: write
 
@@ -11,7 +12,8 @@ name: release-please
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
     outputs:
       # You need to explicitly output the tag name and release_created for each package
       # This assumes your release-please-config.json and .release-please-manifest.json
@@ -43,8 +45,6 @@ jobs:
       package_name: zod
       package_npm_workspace: "@proventuslabs/nestjs-zod"
       package_tag_name: ${{ needs.release-please.outputs['packages/zod--tag_name'] }}
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   release-multipart-form:
     if: ${{ needs.release-please.outputs['packages/multipart-form--release_created'] == 'true' }}
@@ -54,5 +54,3 @@ jobs:
       package_name: multipart-form
       package_npm_workspace: "@proventuslabs/nestjs-multipart-form"
       package_tag_name: ${{ needs.release-please.outputs['packages/multipart-form--tag_name'] }}
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
