@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 
 import { z } from "zod/v4";
@@ -80,6 +80,112 @@ describe("module", () => {
 			useFlags: false,
 			clientName: "some long enough client name",
 			supportsTransforms: true,
+		});
+	});
+
+	describe("warnOnly", () => {
+		const WarnOptionSchema = z
+			.object({
+				useFlags: z.boolean().describe("Whether the use of flag is considered when connecting"),
+				clientName: z
+					.string()
+					.min(5)
+					.describe("The client name used for connecting to the universe"),
+			})
+			.describe("The options for connecting using the dynamic module")
+			.transform((v) => ({ ...v, supportsTransforms: false }))
+			.transform(async (v) => ({ ...v, supportsTransforms: true }));
+		type WarnOption = z.infer<typeof WarnOptionSchema>;
+
+		const {
+			ConfigurableModuleClass: WarnConfigurableModuleClass,
+			MODULE_OPTIONS_TOKEN: WARN_MODULE_OPTIONS_TOKEN,
+		} = new ZodConfigurableModuleBuilder(WarnOptionSchema, { warnOnly: true })
+			.setExtras(
+				{
+					isGlobal: false,
+				},
+				(definition, extras) => ({
+					...definition,
+					global: extras.isGlobal,
+				}),
+			)
+			.setClassMethodName("forRoot")
+			.build();
+
+		@Module({})
+		class WarnDynModule extends WarnConfigurableModuleClass {}
+
+		let warnSpy: jest.SpyInstance;
+
+		beforeEach(() => {
+			warnSpy = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+		});
+
+		afterEach(() => {
+			warnSpy.mockRestore();
+		});
+
+		it("should not throw with warnOnly on sync register with invalid options", async () => {
+			const moduleRef = await Test.createTestingModule({
+				imports: [
+					WarnDynModule.forRoot({
+						// @ts-expect-error: intentionally passing invalid options
+						useFlags: "not-a-boolean",
+						clientName: "bad",
+					}),
+				],
+			}).compile();
+
+			const options = moduleRef.get(WARN_MODULE_OPTIONS_TOKEN);
+
+			expect(options).toMatchObject({
+				useFlags: "not-a-boolean",
+				clientName: "bad",
+			});
+			expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid options for"));
+		});
+
+		it("should not throw with warnOnly on async registerAsync with invalid options", async () => {
+			const moduleRef = await Test.createTestingModule({
+				imports: [
+					WarnDynModule.forRootAsync({
+						// @ts-expect-error: intentionally returning invalid options to test warnOnly
+						useFactory: () => ({
+							useFlags: "not-a-boolean",
+							clientName: "bad",
+						}),
+					}),
+				],
+			}).compile();
+
+			const options = moduleRef.get(WARN_MODULE_OPTIONS_TOKEN);
+
+			expect(options).toMatchObject({
+				useFlags: "not-a-boolean",
+				clientName: "bad",
+			});
+			expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid options for"));
+		});
+
+		it("should still return validated data with warnOnly when options are valid", async () => {
+			const moduleRef = await Test.createTestingModule({
+				imports: [
+					WarnDynModule.forRoot({
+						useFlags: true,
+						clientName: "some long enough client name",
+					}),
+				],
+			}).compile();
+
+			const options = moduleRef.get<WarnOption>(WARN_MODULE_OPTIONS_TOKEN);
+
+			expect(options).toMatchObject({
+				useFlags: true,
+				clientName: "some long enough client name",
+				supportsTransforms: true,
+			});
+			expect(warnSpy).not.toHaveBeenCalled();
 		});
 	});
 

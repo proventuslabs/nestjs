@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 
@@ -87,6 +88,72 @@ describe("config", () => {
 		}).compile();
 
 		await expect(moduleRef).rejects.toThrow();
+	});
+
+	it("should not throw with warnOnly and return raw values on invalid config", async () => {
+		const warnSpy = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+
+		const config = registerConfig(
+			"app",
+			z.object({
+				missing: z.string().describe("This is a required field"),
+			}),
+			{
+				warnOnly: true,
+				variables: {
+					APP_NOT_MISSING: "not missing",
+				},
+			},
+		);
+
+		const moduleRef = await Test.createTestingModule({
+			imports: [
+				ConfigModule.forRoot({ ignoreEnvFile: true, load: [] }),
+				ConfigModule.forFeature(config),
+			],
+		}).compile();
+
+		const configService = moduleRef.get(ConfigService);
+
+		expect(configService.get("app")).toEqual({
+			notMissing: "not missing",
+		});
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid config for "app"'));
+
+		warnSpy.mockRestore();
+	});
+
+	it("should still return parsed/transformed data with warnOnly when config is valid", async () => {
+		const warnSpy = jest.spyOn(Logger.prototype, "warn").mockImplementation();
+
+		const config = registerConfig(
+			"app",
+			z.object({
+				port: z.coerce
+					.number<string | undefined>()
+					.positive()
+					.min(0)
+					.max(65535)
+					.default(9556)
+					.describe("The local HTTP port to bind the server to"),
+			}),
+			{
+				warnOnly: true,
+			},
+		);
+
+		const moduleRef = await Test.createTestingModule({
+			imports: [ConfigModule.forFeature(config)],
+		}).compile();
+
+		const configService = moduleRef.get(ConfigService);
+
+		expect(configService.get("app")).toEqual({
+			port: 9556,
+		});
+		expect(warnSpy).not.toHaveBeenCalled();
+
+		warnSpy.mockRestore();
 	});
 
 	it("should allow to whitelist key/value pairs", async () => {
