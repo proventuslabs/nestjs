@@ -1,0 +1,58 @@
+{
+	"name": "@proventuslabs/nestjs-graphile-worker",
+	"version": "0.1.0",
+	"license": "MIT",
+	"description": "NestJS module for graphile-worker with full DI, guards, pipes, interceptors, and exception filters.",
+	"keywords": ["nestjs", "graphile-worker", "queue", "jobs"],
+	"author": "ProventusLabs <info@proventuslabs.com>",
+	"homepage": "https://github.com/proventuslabs/nestjs/tree/main/packages/graphile-worker#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/proventuslabs/nestjs.git",
+		"directory": "packages/graphile-worker"
+	},
+	"bugs": {
+		"url": "https://github.com/proventuslabs/nestjs/issues"
+	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": ["dist"],
+	"scripts": {
+		"prepublishOnly": "npm run build",
+		"build": "nest build",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --write",
+		"typecheck": "tsc --noEmit",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
+	},
+	"peerDependencies": {
+		"@nestjs/common": "^10.0.0 || ^11.0.0",
+		"@nestjs/core": "^10.0.0 || ^11.0.0",
+		"graphile-worker": ">=0.13.0 <1.0.0",
+		"rxjs": "^7.0.0",
+		"reflect-metadata": "^0.2.0"
+	},
+	"peerDependenciesMeta": {
+		"@nestjs/event-emitter": { "optional": true }
+	},
+	"devDependencies": {
+		"@nestjs/cli": "^11.0.0",
+		"@nestjs/common": "^11.0.0",
+		"@nestjs/core": "^11.0.0",
+		"@nestjs/event-emitter": "^3.0.0",
+		"@nestjs/testing": "^11.0.0",
+		"@types/jest": "^30.0.0",
+		"@types/node": "^20.0.0",
+		"graphile-worker": "^0.16.0",
+		"jest": "^30.0.0",
+		"pg": "^8.0.0",
+		"@types/pg": "^8.0.0",
+		"reflect-metadata": "^0.2.2",
+		"rxjs": "^7.8.2",
+		"ts-jest": "^29.4.0",
+		"typescript": "^5.8.3"
+	},
+	"dependencies": {}
+}

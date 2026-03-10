@@ -17,6 +17,7 @@
 !tsconfig.build.json
 !jest.config.cjs
 !flake.*
+!.ghproject
 
 # Documentation
 !LICENSE

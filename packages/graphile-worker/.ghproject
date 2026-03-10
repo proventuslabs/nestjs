@@ -1,0 +1,40 @@
+[project]
+repo = proventuslabs/nestjs
+number = 5
+owner = proventuslabs
+id = PVT_kwDOBzNfus4BRHfs
+
+[labels]
+bug
+documentation
+duplicate
+enhancement
+good first issue
+help wanted
+invalid
+question
+wontfix
+autorelease: pending
+autorelease: tagged
+
+[field:Status]
+id = PVTSSF_lADOBzNfus4BRHfszg_Cfog
+Backlog = f75ad846
+Ready = 61e4505c
+In progress = 47fc9ee4
+In review = df73e18b
+Done = 98236657
+
+[field:Priority]
+id = PVTSSF_lADOBzNfus4BRHfszg_Cfro
+P0 = 79628723
+P1 = 0a877460
+P2 = da944a9c
+
+[field:Size]
+id = PVTSSF_lADOBzNfus4BRHfszg_Cfrs
+XS = 6c6483d2
+S = f784b110
+M = 7515a9f1
+L = 817d0097
+XL = db339eb2
