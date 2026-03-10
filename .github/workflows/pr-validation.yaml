@@ -24,3 +24,4 @@ jobs:
             gha
             zod
             multipart-form
+            graphile-worker
