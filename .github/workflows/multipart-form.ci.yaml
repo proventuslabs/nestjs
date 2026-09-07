@@ -6,8 +6,6 @@ on:
       - packages/multipart-form/**
       - .github/workflows/multipart-form.ci.yaml
       - .github/workflows/-template-package.ci.yaml
-    branches:
-      - main
 
 permissions:
   contents: read
