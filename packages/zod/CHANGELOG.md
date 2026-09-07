@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v2.1.0...nestjs-zod@v2.2.0) (2026-09-07)
+
+
+### Features
+
+* **zod:** support NestJS 12 ([#48](https://github.com/proventuslabs/nestjs/issues/48)) ([fb94189](https://github.com/proventuslabs/nestjs/commit/fb94189849bd0e331c118ef9e80ae60aade67998))
+
+
+### Bug Fixes
+
+* **zod:** declare every dependency the package actually uses ([#42](https://github.com/proventuslabs/nestjs/issues/42)) ([ecb53ad](https://github.com/proventuslabs/nestjs/commit/ecb53ad757896a678ae6d024c04f4cb33875948c))
+
 ## [2.1.0](https://github.com/proventuslabs/nestjs/compare/nestjs-zod@v2.0.1...nestjs-zod@v2.1.0) (2026-02-28)
 
 
