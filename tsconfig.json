@@ -12,7 +12,7 @@
 		"noUncheckedIndexedAccess": true,
 
 		/* Modules */
-		"module": "node18",
+		"module": "node20",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"experimentalDecorators": true,
