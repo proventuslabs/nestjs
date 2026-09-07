@@ -5,7 +5,7 @@
 	"private": true,
 	"license": "MIT",
 	"engines": {
-		"node": ">=20.0.0",
+		"node": ">=22.0.0",
 		"npm": ">=10.0.0"
 	},
 	"scripts": {},
@@ -16,7 +16,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.0.0",
 		"commitizen": "^4.3.1",
-		"cz-conventional-changelog": "^3.3.0"
+		"cz-conventional-changelog": "^3.3.0",
+		"typescript": "^6.0.3"
 	},
 	"config": {
 		"commitizen": {

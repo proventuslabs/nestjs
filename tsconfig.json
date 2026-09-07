@@ -19,7 +19,6 @@
 
 		/* Emit */
 		"target": "es2022",
-		"baseUrl": ".",
 		"declaration": true,
 		"emitDecoratorMetadata": true,
 		"sourceMap": true,
@@ -34,7 +33,7 @@
 
 		/* Paths */
 		"paths": {
-			"@proventuslabs/nestjs-*": ["packages/*"]
+			"@proventuslabs/nestjs-*": ["./packages/*"]
 		}
 	},
 	"exclude": ["node_modules"]
