@@ -6,7 +6,7 @@ Thank you for your interest in contributing to our NestJS packages! This documen
 
 ### Prerequisites
 
-- Node.js >= 22.0.0
+- Node.js >= 24.9.0
 - npm >= 10.0.0
 - Git
 
