@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { Readable } from "node:stream";
 
-import busboy, { type Busboy, type BusboyHeaders } from "@fastify/busboy";
+import busboy, { type BusboyHeaders, type BusboyInstance } from "@fastify/busboy";
 import { Observable, Subject } from "rxjs";
 
 import {
@@ -37,7 +37,7 @@ export function parseMultipartData(
 		files: Observable<MultipartFileStream>;
 		fields: Observable<MultipartField>;
 	}>((subscriber) => {
-		let bb: Busboy;
+		let bb: BusboyInstance;
 		try {
 			bb = busboy({ ...options, headers: headers as unknown as BusboyHeaders });
 		} catch (err) {
