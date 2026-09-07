@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: "npm"
           registry-url: "https://registry.npmjs.org"
 
@@ -33,9 +33,9 @@ jobs:
           path: |
             node_modules
             packages/${{ inputs.package_name }}/node_modules
-          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          key: ${{ runner.os }}-node-24-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
           restore-keys: |
-            ${{ runner.os }}-node-20-npm-
+            ${{ runner.os }}-node-24-npm-
 
       - run: npm ci
 
@@ -62,7 +62,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: "npm"
           registry-url: "https://registry.npmjs.org"
 
@@ -72,9 +72,9 @@ jobs:
           path: |
             node_modules
             packages/${{ inputs.package_name }}/node_modules
-          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
+          key: ${{ runner.os }}-node-24-npm-${{ hashFiles('package-lock.json', format('packages/{0}/package-lock.json', inputs.package_name)) }}
           restore-keys: |
-            ${{ runner.os }}-node-20-npm-
+            ${{ runner.os }}-node-24-npm-
 
       - run: npm ci
 
