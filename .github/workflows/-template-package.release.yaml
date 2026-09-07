@@ -13,6 +13,15 @@ on:
         description: "The release tag name for the package"
         required: true
         type: string
+      prerelease_moves_latest:
+        description: "Also point the `latest` dist-tag at prerelease publishes. Only for packages with no stable release yet; requires the NPM_TOKEN secret, since OIDC cannot authenticate `npm dist-tag`."
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      NPM_TOKEN:
+        description: "npm granular access token with write access to the package. Only needed when prerelease_moves_latest is true."
+        required: false
 
 jobs:
   build-and-upload:
@@ -97,3 +106,22 @@ jobs:
             --provenance \
             --access public \
             --tag ${{ steps.dist_tag.outputs.tag }}
+
+      # `npm publish` sets exactly one dist-tag, and OIDC cannot authenticate
+      # `npm dist-tag`, so moving `latest` onto a prerelease needs a token and a
+      # separate step. NODE_AUTH_TOKEN is set only here, so the publish above
+      # still resolves an empty token and falls through to trusted publishing.
+      - name: Point latest at this prerelease
+        if: ${{ inputs.prerelease_moves_latest && steps.dist_tag.outputs.tag != 'latest' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::prerelease_moves_latest is enabled for ${{ inputs.package_name }} but no NPM_TOKEN secret was passed to this workflow"
+            exit 1
+          fi
+          echo "Moving latest to ${{ steps.dist_tag.outputs.version }} (also tagged ${{ steps.dist_tag.outputs.tag }})"
+          npm dist-tag add \
+            ${{ inputs.package_npm_workspace }}@${{ steps.dist_tag.outputs.version }} \
+            latest
+          npm dist-tag ls ${{ inputs.package_npm_workspace }}

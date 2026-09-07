@@ -54,3 +54,9 @@ jobs:
       package_name: multipart-form
       package_npm_workspace: "@proventuslabs/nestjs-multipart-form"
       package_tag_name: ${{ needs.release-please.outputs['packages/multipart-form--tag_name'] }}
+      # the package has no stable release yet, so a plain `npm install` should
+      # resolve the newest alpha rather than a stale one. Remove this (and the
+      # secret below) once 1.0.0 ships and `latest` starts moving on its own.
+      prerelease_moves_latest: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
