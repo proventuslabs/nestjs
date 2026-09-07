@@ -17,7 +17,7 @@ type ConfigNamespace<T extends string> = CamelCase<T>;
  * The flattened type of the config.
  *
  * @example
- * const config = registerConfig('app', z.object({ port: z.number() }));
+ * const config = registerConfig('app', z.object({ port: z.coerce.number<string | undefined>() }));
  * type AppConfig = ConfigType<typeof config>;
  * //   ^? { port: number }
  */
@@ -27,7 +27,7 @@ export type ConfigType<T extends (...args: unknown[]) => unknown> = NestConfigTy
  * The type of the config for a given namespace.
  *
  * @example
- * const config = registerConfig('app', z.object({ port: z.number() }));
+ * const config = registerConfig('app', z.object({ port: z.coerce.number<string | undefined>() }));
  * type AppConfig = NamespacedConfigType<typeof config>;
  * //   ^? { app: { port: number } }
  */
@@ -41,16 +41,30 @@ export type NamespacedConfigType<
 /**
  * Registers a config with the `ConfigModule.forFeature` for partial configuration under the provided namespace.
  *
+ * Environment variables always arrive as strings, so the schema's *input* type has to be
+ * assignable to `Record<string, string | undefined>`. Coerce with an explicit input type
+ * (`z.coerce.number<string | undefined>()`) rather than `z.number()`, which only accepts a
+ * number as input and will not satisfy that constraint.
+ *
  * @param namespace - The namespace of the config
  * @param configSchema - The schema of the config
- * @param whitelistKeys - Set of keys to be whitelisted and get passed to the schema as-is
- * @param variables - The environment variables - defaults to `process.env`
+ * @param options - Optional settings
+ * @param options.whitelistKeys - Set of keys to be whitelisted and get passed to the schema as-is
+ * @param options.variables - The environment variables - defaults to `process.env`
+ * @param options.warnOnly - When `true`, a validation failure logs a warning and the raw values
+ *   pass through unchanged instead of throwing
  *
  * @throws {TypeError} If the environment variables or configuration file content do not match the schema.
  *
  * @example
  * const ConfigSchema = z.object({
- *   port: z.number().int().min(0).max(65535).default(9558).describe('The local HTTP port to bind the server to'),
+ *   port: z.coerce
+ *     .number<string | undefined>()
+ *     .int()
+ *     .min(0)
+ *     .max(65535)
+ *     .default(9558)
+ *     .describe('The local HTTP port to bind the server to'),
  * });
  *
  * export const appConfig = registerConfig('app', ConfigSchema);
