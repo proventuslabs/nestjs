@@ -78,5 +78,22 @@ jobs:
 
       - run: npm ci
 
+      - name: Resolve npm dist-tag from the version
+        id: dist_tag
+        run: |
+          version="$(node -p "require('./packages/${{ inputs.package_name }}/package.json').version")"
+          case "$version" in
+            *-*) tag="${version#*-}"; tag="${tag%%.*}" ;;
+            *)   tag="latest" ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing $version under dist-tag $tag"
+
       - name: Publish ${{ inputs.package_npm_workspace }} to npm
-        run: npm publish --workspace=${{ inputs.package_npm_workspace }} --provenance --access public
+        run: |
+          npm publish \
+            --workspace=${{ inputs.package_npm_workspace }} \
+            --provenance \
+            --access public \
+            --tag ${{ steps.dist_tag.outputs.tag }}

@@ -60,4 +60,13 @@ jobs:
         run: npm run build --workspace=${{ needs.detect-release-please.outputs.package_npm_workspace }}
 
       - name: Verify npm publish
-        run: npm publish --dry-run --workspace=${{ needs.detect-release-please.outputs.package_npm_workspace }}
+        run: |
+          version="$(node -p "require('./packages/${{ needs.detect-release-please.outputs.package_name }}/package.json').version")"
+          case "$version" in
+            *-*) tag="${version#*-}"; tag="${tag%%.*}" ;;
+            *)   tag="latest" ;;
+          esac
+          echo "Verifying $version under dist-tag $tag"
+          npm publish --dry-run \
+            --workspace=${{ needs.detect-release-please.outputs.package_npm_workspace }} \
+            --tag "$tag"
