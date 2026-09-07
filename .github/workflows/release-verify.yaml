@@ -37,10 +37,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: "npm"
 
       - name: Cache root & workspace node_modules
@@ -49,9 +49,9 @@ jobs:
           path: |
             node_modules
             packages/${{ needs.detect-release-please.outputs.package_name }}/node_modules
-          key: ${{ runner.os }}-node-20-npm-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node-24-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-20-npm-
+            ${{ runner.os }}-node-24-npm-
 
       - name: Install dependencies
         run: npm ci
