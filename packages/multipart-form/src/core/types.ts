@@ -12,6 +12,7 @@ export type { BusboyConfig } from "@fastify/busboy";
  * Re-export types from `qs` for convenience.
  */
 import type * as Qs from "qs";
+
 export type { Qs };
 
 /**
