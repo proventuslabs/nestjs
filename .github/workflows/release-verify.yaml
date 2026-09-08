@@ -17,14 +17,16 @@ jobs:
       - name: Extract package info from branch
         id: extract
         run: |
-          # Branch format: release-please--branches--main--components--<package-name>
-          BRANCH="${{ github.head_ref }}"
-          PACKAGE_DIR=$(echo "$BRANCH" | sed 's/.*--components--//')
+          # Branch format: release-please--branches--main--components--<component>
+          #
+          # The component is the npm package name without its scope, so it already
+          # carries the nestjs- prefix (@proventuslabs/nestjs-zod -> nestjs-zod).
+          # The directory under packages/ does not (packages/zod).
+          branch="${{ github.head_ref }}"
+          component="${branch##*--components--}"
 
-          echo "package_name=$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
-
-          # Map package directory to npm workspace name
-          echo "package_npm_workspace=@proventuslabs/nestjs-$PACKAGE_DIR" >> "$GITHUB_OUTPUT"
+          echo "package_name=${component#nestjs-}" >> "$GITHUB_OUTPUT"
+          echo "package_npm_workspace=@proventuslabs/${component}" >> "$GITHUB_OUTPUT"
 
   verify-npm:
     needs: detect-release-please
